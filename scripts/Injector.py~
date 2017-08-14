@@ -1,0 +1,192 @@
+import numpy as np
+import copy
+from scripts.Sphere import Sphere
+from scripts.RandomTools import RandomTools
+from scipy import stats
+
+import healpy as hp
+#from astropy import units as u
+
+from scipy.stats import norm
+
+class Injector(Sphere, RandomTools, ):
+    
+    def __init__(self, ):
+        pass
+    
+    
+    def generate_sig_events(self, sources, mc, k=0., ):
+        inject_sources = copy.deepcopy(sources)
+        
+        dec_bandwidth = np.deg2rad(5.)
+
+        NewFlux = inject_sources['flux'] * np.exp(stats.norm.rvs(loc=0., scale=self.SmearInjection, size=len(sources)))
+        Norm = np.sum(sources['flux']) / np.sum(NewFlux)
+        inject_sources['flux'] = NewFlux * Norm
+        
+        inject_sources['flux'] = inject_sources['flux']*k  
+        
+        sig_events = self.extract_events_from_mc(inject_sources, mc,)
+        return sig_events
+      
+        
+    def FindAndApplyBandMask(self, source, mc, dec_bandwidth):
+        min_dec = max(-np.pi/2., source['dec'] - dec_bandwidth)
+        max_dec = min(np.pi/2., source['dec'] + dec_bandwidth)
+        omega = 2.*np.pi*(np.sin(max_dec) - np.sin(min_dec))
+        if self._ReturnInjectorNExp:
+            self.InjectionBandMask = dict()
+        if source['name'] in self.InjectionBandMask.keys():
+            band_mask = self.InjectionBandMask[source['name']]
+        else:
+            band_mask = np.logical_and( np.greater(mc["trueDec"], min_dec), np.less(mc["trueDec"], max_dec) )
+            self.InjectionBandMask[source['name']] = band_mask
+        return (mc[band_mask]), omega, band_mask
+
+        
+    def extract_events_from_mc(self, sources, mc, ):
+        sig_events = np.empty((0, ), dtype=[("ra", np.float), ("sinDec", np.float),
+                                    ("sigma", np.float), ("logE", np.float),
+                                    ("dec", np.float), ('timeMJD', np.float),
+                                   ])   
+        livetime = self.Livetime * (60.*60.*24.)
+        dec_bandwidth = np.deg2rad(5.)
+        TotMuN = 0.
+        for source in sources:
+ 
+            SourceMC, omega, band_mask = self.FindAndApplyBandMask(source, mc, dec_bandwidth)
+    
+            if self.UseTime==True:
+                EfficencyFactor = livetime / ((self.DataEnd-self.DataStart) * 24.*60.*60.)
+                if self.TimeModel=='Box':
+                    TotalTime = self.TimeBoxLenght
+                if self.TimeModel=='BoxPre':
+                    TotalTime = self.TimeBoxLenght
+                if self.TimeModel=='Decay':
+                    TotalTime = self.Model_tpp * (np.log(self.Model_Length+self.Model_tpp)-np.log(0.+self.Model_tpp))
+                TotalTimeDays = TotalTime
+                TotalTime = TotalTime * (60.*60.*24.)
+                fluence = EfficencyFactor * TotalTime * source['flux']
+            else:
+                fluence = source['flux'] * livetime
+
+            if self._ReturnInjectorNExp == True:
+                source['weight_distance'] = 1.
+                
+            SourceMC['ow'] = self.WeightsInject[band_mask] / omega * source['weight_distance'] * fluence
+            
+            MuN = np.sum(SourceMC['ow'], dtype=np.float)
+                       
+            if self._ReturnInjectorNExp == True:
+                return MuN
+            
+            if self.UseTime==True:
+                TotMuN+=MuN * source['weight_time'] / (TotalTimeDays/self.SeasonTimeSpan)
+            else:
+                TotMuN+=MuN
+                
+            n_signal = np.random.poisson(MuN)
+
+            sam_ev = np.empty((n_signal, ), dtype=mc.dtype)
+            if n_signal < 1:
+                continue
+            p_select = SourceMC['ow']/np.sum(SourceMC['ow'])           
+            ind = np.random.choice(len(SourceMC['ow']), size=n_signal, p=p_select)
+            
+            beta = [np.random.uniform(0., 2.*np.pi) if i in ind[:k] else 0.
+                    for k, i in enumerate(ind)]
+            sam_ev = SourceMC[ind]
+            sam_ev = self.rotate_struct(sam_ev, source['ra'], source['dec'], beta)
+
+            if self.UseTime == True:
+                sam_ev['timeMJD'] = self.GenerateNRandomNumbers(n_signal) + source['discoverydate_mjd']
+                sam_ev = self.CheckTimeBorders(sam_ev, )
+            
+            sig_events = np.concatenate( (sig_events, sam_ev) )
+        print(TotMuN, len(sig_events))
+        return sig_events   
+        
+
+    def CheckTimeBorders(self, sam_ev, ):
+        mask = np.logical_and(sam_ev['timeMJD']>self.DataStart, sam_ev['timeMJD']<self.DataEnd)
+        return sam_ev[mask]
+          
+        
+    def merge_struct_arrays(self, data1, data2):
+        dataFinal = np.concatenate( (data1, data2) )
+        return dataFinal
+
+
+    def scramble_exp_data(self, exp):
+        if self.Unblind==False:
+            if self.BootStrap==True:
+                N_tot = len(exp)
+                x = np.random.choice(N_tot, N_tot)
+                exp = exp[x]
+            exp['ra'] = np.random.uniform(0, 2*np.pi, size=len(exp))
+            np.random.shuffle(exp['timeMJD'])
+        else:
+            print('WARNING: Running in Unblinding Mode')
+        return exp
+    
+    
+    def inject_signal_events(self, exp, mc, sources, k=0., ):
+        sig_events = self.generate_sig_events(sources, mc, k)
+        exp = self.scramble_exp_data(exp)           
+        data = self.merge_struct_arrays(exp, sig_events)
+        return data, sig_events
+    
+    
+    def rotate2(self, ra1, dec1, ra2, dec2, SourceRa, SourceDec, beta):           
+        delta_ra = ra1-ra2
+        delta_dec = dec1-dec2
+        ra = SourceRa + delta_ra
+        dec = SourceDec + delta_dec
+        mask = np.logical_or( np.array(dec > (np.pi/2.)), np.array(dec < (-np.pi/2.)) )
+        dec = np.arcsin(np.sin(dec))       
+        ra = ra + mask*np.pi
+        ra = ra % (2.*np.pi)
+        return np.atleast_1d(ra), np.atleast_1d(dec)
+   
+
+    def rotate(self, ra1, dec1, ra2, dec2, ra3, dec3, beta):
+        r""" Rotate ra1 and dec1 in a way that ra2 and dec2 will exactly map
+            onto ra3 and dec3, respectively. All angles are treated as radians.
+        
+        """
+        # turn rightascension and declination into zenith and azimuth for healpy
+        phi1 = ra1 - np.pi
+        zen1 = np.pi/2. - dec1
+        phi2 = ra2 - np.pi
+        zen2 = np.pi/2. - dec2
+        phi3 = ra3 - np.pi
+        zen3 = np.pi/2. - dec3
+        # rotate each ra1 and dec1 towards the pole
+        x = np.array([hp.rotator.rotateDirection(
+                                                 hp.rotator.get_rotation_matrix((dp, -dz, 0.))[0],
+                                                 z, p) for z, p, dz, dp in zip(zen1, phi1, zen2, phi2)])
+                                             
+        # Rotate **all** these vectors towards ra3, dec3
+        zen, phi = hp.rotator.rotateDirection(np.dot(hp.rotator.get_rotation_matrix((-phi3, 0, 0))[0],
+                                                  hp.rotator.get_rotation_matrix((0, zen3, 0.))[0]) ,x[:,0], x[:,1])
+                                              
+        dec = np.pi/2. - zen
+        ra = phi + np.pi
+        return np.atleast_1d(ra), np.atleast_1d(dec)
+
+
+
+        
+    def rotate_struct(self, ev, ra, dec, beta):
+        names = ev.dtype.names
+        ev["ra"], rot_dec = self.rotate(ev["ra"], np.arcsin(ev["sinDec"]),
+                               ev["trueRa"], ev["trueDec"],
+                               ra, dec, beta)
+        if "dec" in names:
+            ev["dec"] = rot_dec
+        ev["sinDec"] = np.sin(rot_dec)
+        # "delete" Monte Carlo information from sampled events
+        non_mc = [name for name in names
+                   if name not in ["trueRa", "trueDec", "trueE", "ow"]]
+        ev = ev[non_mc].copy()
+        return ev

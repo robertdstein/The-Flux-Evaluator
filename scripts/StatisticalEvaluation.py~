@@ -1,0 +1,149 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+import copy
+import os
+import cPickle as pickle
+import scipy as scp
+
+from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.integrate import romberg, quad
+from scipy.optimize import minimize_scalar
+from scipy.optimize import minimize
+from scipy.optimize import curve_fit
+from scipy.stats import norm
+from scipy.stats import poisson
+from scipy.interpolate import interp1d
+from scipy.optimize import bisect
+from numpy.polynomial import polynomial
+from numpy.polynomial.polynomial import polyval
+from scipy.optimize import brentq
+
+
+
+
+
+class sensitivity():
+    
+    def __init__(self, path='test_stat_results/test_setup.pkl', plot_path='plots/LikelihoodLandscape/test_setup'):
+        self.path = path
+        self.plot_path = plot_path
+        self.plotting = True
+        self.alpha = 50.
+        self.beta = 90.
+        self.all_data = {}
+        self.generate_all_data_dict()
+        
+    
+    def generate_all_data_dict(self):      
+        self.all_data['det_chance']={}
+        self.all_data['det_chance_func']={}
+    
+    
+    def read_test_stat(self, ):
+        if os.path.isfile(self.path):
+            pkl_file = open(self.path, 'rb')
+            test_stat_results = pickle.load(pkl_file)
+            pkl_file.close()
+            self.test_stat_results = test_stat_results
+        else:
+            print self.path, ' does not exist'
+    
+    
+    def GenerateDistributions(self, ):
+        self.all_data['test_stat_all_unsorted']={}
+        self.all_data['test_stat_sorted']={}
+        self.all_data['test_stat_sorted_all']={}
+        self.all_data['cumu_dist_normed']={}
+        self.all_data['weights']={}
+        self.all_data['NTrials'] = {}
+        for k in self.test_stat_results.keys():
+            self.all_data['test_stat_all_unsorted'][k] = self.test_stat_results[k]
+            all_test_stat_sorted = np.sort(self.test_stat_results[k])
+            self.all_data['test_stat_sorted_all'][k] = all_test_stat_sorted
+            self.all_data['test_stat_sorted'][k] = np.unique(all_test_stat_sorted)
+            weights = np.array([float(np.sum(all_test_stat_sorted==i)) for i in np.unique(all_test_stat_sorted)])
+            self.all_data['weights'][k] = weights
+            self.all_data['cumu_dist_normed'][k] = np.cumsum(weights)/np.sum(weights)
+            self.all_data['NTrials'][k] = len(self.test_stat_results[k])
+                   
+        
+    def FindTestStatThreshold(self, ):
+        self.lambda_cl_value = np.percentile(self.all_data['test_stat_sorted_all'][0.0], self.alpha)
+        self.TestStatThreshold = np.percentile(self.all_data['test_stat_sorted_all'][0.0], self.alpha)
+        
+        
+    def FindDetectionChance(self, ):
+        self.all_data['DetChanceFunc'] = {}
+        self.all_data['DetChance'] = {}
+        for k in sorted(self.all_data['test_stat_sorted'].keys()):
+            if k==0:
+                self.all_data['DetChance'][k] = self.alpha/100.
+            else:
+                g = interp1d(self.all_data['test_stat_sorted'][k], self.all_data['cumu_dist_normed'][k],
+                                 bounds_error=False, fill_value=0., )
+                f = lambda x: 1. - g(x)
+                self.all_data['DetChanceFunc'][k] = f
+                self.all_data['DetChance'][k] = f(self.TestStatThreshold)  
+    
+    
+    def SensInterpoaltionFunction(self, x, a):
+        value = (1. - np.exp(-np.log10(a) * x))/2. + self.alpha/100.
+        return value
+    
+        
+    def InterpolateDetectionChance(self, ):
+        x = np.sort(np.array(self.all_data['test_stat_sorted_all'].keys()))[:]
+        y = np.array([self.all_data['DetChance'][k] for k in x])
+        weights = np.array([self.all_data['NTrials'][k] for k in x])
+        self.DetChanceInterpolation = interp1d(x, y, kind='linear')
+        PolyParams = np.polyfit(x, y, 3, w=weights)
+        self.DetChancePolyFit = lambda x: np.polyval(PolyParams, x)
+        
+        self.DetChanceMyFit = scp.optimize.curve_fit(self.SensInterpoaltionFunction, x, y, sigma=1./weights)[0]
+#        print 10.**(self.DetChanceMyFit)
+    
+    def FindSensitivity(self, ):
+        FluxScaleMin = np.min(self.all_data['test_stat_sorted_all'].keys()[:])
+        FluxScaleMax = np.max(self.all_data['test_stat_sorted_all'].keys())
+        x = np.linspace(FluxScaleMin, FluxScaleMax, 1.e3)
+        
+        f = lambda x: self.DetChancePolyFit(x) - self.beta/100.
+        f2 = lambda x: self.DetChanceInterpolation(x) - self.beta/100.
+        f3 = lambda x: self.SensInterpoaltionFunction(x, self.DetChanceMyFit) - self.beta/100.
+        
+        if True:
+            plt.figure()
+            for k in self.all_data['DetChance'].keys():
+                plt.scatter(k, self.all_data['DetChance'][k], color='black')
+            plt.plot(x, self.DetChanceInterpolation(x), lw=2, color='blue', label='Interpolation')
+            plt.plot(x, self.DetChancePolyFit(x), lw=2, color='red', label='PolyFit')
+            plt.plot(x, self.SensInterpoaltionFunction(x, self.DetChanceMyFit),
+                     lw=2, color='black', label=r'$(1-\exp(-ax))+\frac{1}{2}$')
+            plt.axhline(y=.9, lw=2)
+            plt.grid()
+            plt.xlim(FluxScaleMin,FluxScaleMax)
+#            plt.ylim(.7, 1.)
+            plt.axvline(x=brentq(f, FluxScaleMin, FluxScaleMax), lw=2, color='red')
+            plt.axvline(x=brentq(f2, FluxScaleMin, FluxScaleMax), lw=2, color='blue')
+            plt.axvline(x=brentq(f3, FluxScaleMin, FluxScaleMax), lw=2, color='black')
+            plt.legend(loc='best', fancybox=True, framealpha=1.)
+            plt.xlabel(r'Flux strength $E^2 \mathrm{d}N /\mathrm{d}E$ [ TeV cm$^{-2}$ s$^{-1}$]')
+            plt.ylabel(r'chance for $\lambda$ over threashold')
+            plt.savefig(str(self.plot_path)+'.pdf')
+#            plt.savefig(str(self.plot_path)+'.png', dpi=800)
+            plt.show()
+        print brentq(f, FluxScaleMin, FluxScaleMax)
+        print brentq(f2, FluxScaleMin, FluxScaleMax)
+        print brentq(f3, FluxScaleMin, FluxScaleMax)
+        print ''
+
+
+
+    def CreateSensitivyAllInOne(self, ):
+	self.read_test_stat()
+	self.GenerateDistributions()
+	self.FindTestStatThreshold()
+	self.FindDetectionChance()
+	self.InterpolateDetectionChance()
+	self.FindSensitivity()

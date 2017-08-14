@@ -1,0 +1,67 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+import scipy as scp
+
+from scipy.integrate import romberg
+from scipy.interpolate import interp1d
+
+
+class RandomTools(object, ):
+    
+    def __init__(self, ):
+        pass
+
+    def ResetRandomGeneratorPDF(self, ):
+        self.InversInterpol = np.nan
+        self.RandomFuncNorm = np.nan
+
+    def InitRandomGeneratorPDF(self, ):         
+        x_min = 0.
+        if self.TimeModel=='Box':
+            self.NuLightCurveFunc = lambda x: self.BoxFunc(x, self.TimeBoxLenght)
+            x_max = self.TimeBoxLenght
+            norm = (x_max-x_min)
+            IntegralNuLightCurveFunc = lambda x: x / norm
+        if self.TimeModel=='Decay':
+            self.NuLightCurveFunc = lambda x: self.AnalyticTimePDF(x, self.Model_tpp, self.DecayModelLenght)
+            x_max = self.DecayModelLenght
+            norm = self.Model_tpp * (np.log(x_max+self.Model_tpp)-np.log(x_min+self.Model_tpp))
+            print norm, x_max, x_min, self.Model_tpp
+            IntegralNuLightCurveFunc = lambda x: self.Model_tpp * (np.log(x+self.Model_tpp) - np.log(self.Model_tpp)) / norm
+
+        self.IntegralNuLightCurveFunc = np.vectorize(IntegralNuLightCurveFunc)
+        x = np.linspace(x_min, x_max, 1.e4)
+        y = self.IntegralNuLightCurveFunc(x)
+        
+        F_interpol = interp1d(x, y)
+        self.InversInterpol = interp1d( self.IntegralNuLightCurveFunc(x), x, kind='linear')
+#        self.IntegralOfRandomFunction = F_interpol
+#        self.RandomFuncNorm = norm
+        return self.InversInterpol
+        
+         
+    def GenerateNRandomNumbers(self, nEvents, ):        
+        values = self.InversInterpol(np.random.uniform(0., 1., nEvents))
+        return values  
+    
+    
+    def PlotTestAndPDF(self, nEvents, xmin=0., xmax=1., path='TimePDFTest.pdf'):
+        ExtraPlotSpace = 100.
+        values = self.GenerateNRandomNumbers(nEvents)
+        x = np.linspace(xmin-ExtraPlotSpace, xmax+ExtraPlotSpace, 1000+1)
+
+        plt.figure()
+        plt.hist(values, bins=50+1, histtype='stepfilled', lw=0, normed=True, label='data', alpha=0.5)
+        plt.plot(x, self.NuLightCurveFunc(x), lw=2, color='blue', label=r'$\nu$ light curve')
+        
+#        for source in self.sources[:1]:
+#            plt.plot(x, self.SingleTimePDF(x, source), lw=2, label=r'PDF', color='red')
+        
+        plt.grid()
+        plt.xlim(xmin-ExtraPlotSpace, xmax+ExtraPlotSpace)
+        plt.legend(loc='best', fancybox=True, framealpha=1.)
+        plt.xlabel('Time [d]')
+        plt.ylabel('PDF value [a.u.]')
+        plt.savefig(path)
+        plt.show()
