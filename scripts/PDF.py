@@ -53,11 +53,17 @@ class PDF():
 		return data_band
 	
 	def SelectEventsInBox(self, source, data, ):
+		"""Only selects events in a given box.
+		"""
+		#Creates a box of width 2*dec_bandwidth(20 degrees)
 		dec_bandwidth = np.deg2rad(10.)
 		min_dec = max(-np.pi/2., source['dec'] - dec_bandwidth)
 		max_dec = min(np.pi/2., source['dec'] + dec_bandwidth)
+		
 		cosFact = np.amin(np.cos([min_dec, max_dec]))
 		dPhi = np.amin([2.*np.pi, 2.*dec_bandwidth/cosFact])
+		print dec_bandwidth, min_dec, max_dec, cosFact, dPhi
+		raw_input("prompt")
 		ra_dist = np.fabs((data["ra"] - source['ra'] + np.pi) % (2.*np.pi) - np.pi)
 		mask = ra_dist < dPhi/2.
 		data_box = data[mask]

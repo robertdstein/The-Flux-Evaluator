@@ -48,6 +48,8 @@ class LLh(PDF, Injector):
 		#Sets "_..." to False
 		self._ReturnInjectorNExp = False
 		
+		#******************************************************************************************
+		#???????????
 		self._g1 = np.nan
 		self._w_cache = np.nan
 		self.w_cache = dict()
@@ -76,11 +78,16 @@ class LLh(PDF, Injector):
 		self.exp = np.load(kwargs['ExpPath'])
 		self.mc = np.load(kwargs['MCPath'])
 		
+		#********************************************************************************************************
+		#Loads sources from the given sourcepath
 		#Does something...
 		self._sources2 = np.load(kwargs['SourcePath'])
 		self._sources = np.lib.recfunctions.append_fields(self._sources2, 'TimeNorm', data=np.ones_like(self._sources2['ra']))
 		del(self._sources2)
 		
+		#**********************************************************************************************************
+		#AcceptancePath2 replaced some older variable?
+		#Interpolates (in 2D) a function for the Gamma and declination
 		try:
 			DecBins = np.load(kwargs['AcceptanceWeightPath2']+'_bins_dec.npy')
 			GammaBins = np.load(kwargs['AcceptanceWeightPath2']+'_bins_gamma.npy')
@@ -90,18 +97,27 @@ class LLh(PDF, Injector):
 			del(f)
 		except:
 			print('No Acceptance Files')
-		
+			
+		#Sets Use Energy, Fit Gamma and Fixed Gamma
 		self.UseEnergy = kwargs['UseEnergy']
 		self.FitGamma = kwargs['FitGamma']
 		self.FixedGamma = kwargs['FixedGamma']
 		
+		#Toggles using a box for sources to reduce runtime		
 		self.UseBox = kwargs['UseBox']
-	  
+
+		#*************************************************************************************************************************
+		#Sets Fit Weights (True/False for fitting...)  
 		self.FitWeights = kwargs['FitWeights']
 		
+		#Sets UseTime and Time Model (Box/BoxPre/Decay)		
 		self.UseTime = kwargs['UseTime']
 		self.TimeModel = kwargs['TimeModel']
+		
+		#If fitting for time
 		if self.UseTime:
+			#**************************************************************************************************************************
+			#Adds a 'Discovery Delay' (10 days) which is subtracted from discovery date
 			self.DiscDelay = 10.
 			self.sources['discoverydate_mjd'] = self.sources['discoverydate_mjd'] - self.DiscDelay
 			
@@ -112,24 +128,35 @@ class LLh(PDF, Injector):
 				self.TimeBoxLenght = kwargs['TimeBoxLenght']
 
 			if self.TimeModel=='Decay':
+				#******************************************************************************************************************************
+				#What is 'tpp'? Also Length is spelled wrong. Is this used?
 				self.Model_tpp = kwargs['Model_tpp']
 				self.DecayModelLenght = kwargs['DecayModelLenght']
 				self.Model_Length = self.DecayModelLenght
 		
+		#****************************************************************************************************************************************
+		#Sets smear Injection and MissTiming
 		self.SmearInjection = kwargs['SmearInjection']
 		self.MissTiming = kwargs['MissTiming']
-			   
+		
+		#********************************************************************************************************************************************************
+		#Empty Dictionary that is filled by FindAndApplyBandMask?
 		self.InjectionBandMask = dict()
 		
+		#***********************************************************************************************************************************************************
+		#If Injection Gamma is not given, sets it to 2. Then gives Injection Weights
 		if 'InjectionGamma' in kwargs.keys():
 			self.InjectionGamma = kwargs['InjectionGamma']
 		else:
 			self.InjectionGamma = 2.
 			self.WeightsInject = self.GetWeights(self.mc, self.InjectionGamma, )
 		print 'Injection Spectrum', self.InjectionGamma
-	
+		
+		#*************************************************************************************************************************************************************
+		#????
 		self.WeightCache = np.nan
 		
+		#Makes sure unblinding is false, (so times are shuffled. otherwise gives a warning
 		self.Unblind = False
 		
 		if self.Unblind==False:
@@ -137,7 +164,8 @@ class LLh(PDF, Injector):
 		else:
 			print('WARNING: Running in Unblinding Mode')
 			
-		
+		#*******************************************************************************************************************************************************************	
+		#Sets a default of Bootstrap=False, if not provided in init
 		self.BootStrap = False
 		try:
 			self.BootStrap = kwargs['BootStrap']
@@ -147,12 +175,16 @@ class LLh(PDF, Injector):
 #=====================================================================================
 #Running Part
 #=====================================================================================    
+	#Designed for backwards compatibility, so self.sources reurns self._sources
 	@property
 	def sources(self, ):
 		return self._sources
 	
 	
 	def PrepareFakeDataSetAndEvalautePDF(self, k, ):
+		"""Prepares a scrampled dataset
+		"""
+		#Inititalises empty dictionaries and nan-values 
 		self.w_cache = dict()
 		self.w_cache_Sig = dict()
 		self._ev = np.nan
@@ -160,14 +192,15 @@ class LLh(PDF, Injector):
 		self._ev_S = np.nan
 		self.EnergyWeightCache = np.nan
 		self.SoB = np.nan
-			
+		
+		#If UseBox, only selects events in Box
 		if self.UseBox == True:
 			self.w_cache_BG = dict()
 			self._ev = self.SelectEventsInBand(self.sources[0], self.exp)
 			self._ev = self.scramble_exp_data(self._ev)
 			self._ev = self.SelectEventsInBox(self.sources[0], self._ev, )
 		if self.UseBox == False:
-			self._ev = self.scramble_exp_data(self.exp)   
+			self._ev = self.scramble_exp_data(self.exp)
 		if self.UseEnergy == True:
 			self.GenerateBGWeightDictForAllGamma(self._ev)
 							
@@ -215,9 +248,12 @@ class LLh(PDF, Injector):
 			self.ComputeSourceWeightsTime()
 			self.InitRandomGeneratorPDF()   
 	
+	#*************************************************************************************************************************
 	def ProduceLLhFunction(self, ):
+		"""What does this do? Why does it return an array for UseBox?, but a number otherwise
+		"""
 		f = lambda x: - self.TestStatNewLLhFitWeights(x, )
-
+		
 		return f
 
 #=====================================================================================
@@ -303,8 +339,12 @@ class LLh(PDF, Injector):
 		del(SoB)
 		del(y)
 		del(a)
+		#***************************************************************************************************
+		#This is what stops Usebox from working!
 		if self.UseBox==True:
-			funval = funval.sum() + (N_all - N) * np.log1p(-n / N_all)       
+			funval = funval.sum() + (N_all - N) * np.log1p(-n / N_all)
+			print funval, (N_all - N), np.log1p(-n / N_all), (N_all - N) * np.log1p(-n / N_all)
+			raw_input("prompt")
 		else:
 			funval = funval.sum()
 		return 2.* funval

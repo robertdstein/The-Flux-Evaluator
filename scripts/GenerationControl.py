@@ -39,13 +39,10 @@ class GenerationControl(object, ):
 		self.write_result_to_file(path, k, [], test_stats)
 		
 	def memory_usage_ps(self, ):
-		"""Returns the memory usage
+		"""Returns the memory usage.
 		"""
 		import subprocess
-		import numpy as np
-		import resource
 		import os
-		import gc
 		out = subprocess.Popen(['ps', 'v', '-p', str(os.getpid())],stdout=subprocess.PIPE).communicate()[0].split(b'\n')
 		vsz_index = out[0].split().index(b'RSS')
 		mem = float(out[1].split()[vsz_index]) / 1024 / 1.e3
@@ -59,10 +56,12 @@ class GenerationControl(object, ):
 
 		test_stats = []
 		
+		#*************************************************************************************************************************
 		#Sets tmp directory (currently Alex's)
 		try:
 			tmpdir=os.environ['TMPDIR']
 		except KeyError:
+#			tmpdir ="/afs/ifh.de/user/s/steinrob/scratch/PS_Data"
 			tmpdir="/afs/ifh.de/user/a/astasik/scratch/PS_Data/"
 			
 		#Gives the memory usage
@@ -119,6 +118,7 @@ class GenerationControl(object, ):
 #				   **self.settings)
 							
 		#Runs "InitEverything" for each configuration
+							
 #		self.LLh_instanceIC40.InitEverythingForMultipleTrials()
 #		self.LLh_instanceIC59.InitEverythingForMultipleTrials()
 #		self.LLh_instanceIC79.InitEverythingForMultipleTrials()
@@ -150,6 +150,8 @@ class GenerationControl(object, ):
 			def f_final(x):
 				"""The likelihood function to be minimised, given the Ice Cube Data
 				"""
+				#*****************************************************************************************************************************************************
+				#Is this used?
 				NSignalTotal = 0.
 				
 				#Loops over seasons				
@@ -160,14 +162,15 @@ class GenerationControl(object, ):
 				#Loops over each season of data
 				for season in seasons:
 					#If both "UseEnergy" and "FitGamma" are true, takes gamma from 
+					#Otherwise sets Gamma to be the true value
 					if np.logical_and(self.settings['UseEnergy']==True, self.settings['FitGamma']==True):
-						gamma = x[-1] 
+						gamma = x[-1] 					
 					else:
 						gamma = season.InjectionGamma
 					for source in season.sources:
 						source['weight_acceptance'] = season.AcceptanceFitFunc(source['dec'], gamma)
 				
-				#***************************************************************************************************
+				#***************************************************************************************************************************************************
 				#Loop over seasons again? Why not joined to previous?
 				for season in seasons:
 					season.sources['weight_distance'] = season.sources['distance']**(-2.)
@@ -210,6 +213,7 @@ class GenerationControl(object, ):
 					season.SeasonWeight = SeasonWeights[i]
 					season.sources['weight'] = SourceWeights[i]
 
+				#***********************************************************************************************************************
 				#Doesn't run 
 				if False:
 					print('')
@@ -221,11 +225,14 @@ class GenerationControl(object, ):
 #				return self.f_IC40(x)+self.f_IC59(x)+self.f_IC79(x)+self.f_IC86_1(x)+self.f_IC86_2AndFollowing(x)
 				return self.f_IC86_1(x)
 			
+			
 			test_stat_res = self.MinimizeLLh(f_final)
 			test_stats.append(test_stat_res)
 			del(f_final)
-			
+		
 		del(self.LLh_instanceIC86_1.SoB)
+		#*************************************************************************************************************************
+		#Is this actually used before being reinitialised?
 		MemUse = str(float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)/1.e6)
 		return np.array(test_stats)
 		
@@ -274,7 +281,7 @@ class GenerationControl(object, ):
 				res = scp.optimize.fmin_l_bfgs_b(f_final, 1., bounds=[(0., 1000.)], approx_grad=True)           
 
 		#****************************************************************************************************************************8
-		#Returns a value for  LLH once minimised?
+		#Returns a value for LLH at minimum
 		test_stat_res = -res[1]
 		return test_stat_res
 		
@@ -345,15 +352,18 @@ class GenerationControl(object, ):
 		#Creates an empty Pickle Path for results
 		if os.path.isfile(OutPutPath):
 			os.remove(OutPutPath)
-		self.check_if_pkl_file_exists(OutPutPath)
-		
+#		self.check_if_pkl_file_exists(OutPutPath)
+#		
 		#returns a list of all files matching the path given
 		FileList = glob.glob(DataPath+'_*.pkl')
+#		
 		#**************************************************************************************
-		#Opens the empty file, and basically gives {} ?
-		pkl_file = open(OutPutPath, 'rb')
-		test_stat_results = pickle.load(pkl_file)
-		pkl_file.close()
+#		#Opens the empty file, and basically gives {} ?
+#		pkl_file = open(OutPutPath, 'rb')
+#		test_stat_results = pickle.load(pkl_file)
+#		pkl_file.close()
+		
+		test_stat_results={}
 
 		#Loops over each file and adds it to the combined File
 		for SingleFile in FileList:
@@ -372,7 +382,9 @@ class GenerationControl(object, ):
 		pkl_file.close()     
 		self.print_generation_overview(OutPutPath)
 		
-		
+	#*******************************************************************************************************************************
+	#Would this just crash? x is undefined!
+	#I think this function is not used
 	def WeighterFunction(self, seasons, ):
 		for season in seasons:
 			if np.logical_and(self.settings['UseEnergy']==True, self.settings['FitGamma']==True):
@@ -415,6 +427,7 @@ class GenerationControl(object, ):
 				season.SeasonWeight = SeasonWeights[i]
 				season.sources['weight'] = SourceWeights[i]
 
+			#This doesn't run, as far as I can tell
 			if False:
 				print('')
 				print('')    
