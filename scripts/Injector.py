@@ -23,11 +23,11 @@ class Injector():
 		Norm = np.sum(sources['flux']) / np.sum(NewFlux)
 		inject_sources['flux'] = NewFlux * Norm
 		
-		inject_sources['flux'] = inject_sources['flux']*k  
+		inject_sources['flux'] = inject_sources['flux']*k
 		
 		sig_events = self.extract_events_from_mc(inject_sources, mc,)
 		return sig_events
-	  
+
 		
 	def FindAndApplyBandMask(self, source, mc, dec_bandwidth):
 		min_dec = max(-np.pi/2., source['dec'] - dec_bandwidth)
@@ -47,12 +47,12 @@ class Injector():
 		sig_events = np.empty((0, ), dtype=[("ra", np.float), ("sinDec", np.float),
 									("sigma", np.float), ("logE", np.float),
 									("dec", np.float), ('timeMJD', np.float),
-								   ])   
+								   ])
 		livetime = self.Livetime * (60.*60.*24.)
 		dec_bandwidth = np.deg2rad(5.)
 		TotMuN = 0.
 		for source in sources:
- 
+
 			SourceMC, omega, band_mask = self.FindAndApplyBandMask(source, mc, dec_bandwidth)
 	
 			if self.UseTime==True:
@@ -74,8 +74,9 @@ class Injector():
 				
 			SourceMC['ow'] = self.WeightsInject[band_mask] / omega * source['weight_distance'] * fluence
 			
+			#Expectation number of Neutrinos
 			MuN = np.sum(SourceMC['ow'], dtype=np.float)
-					   
+
 			if self._ReturnInjectorNExp == True:
 				return MuN
 			
@@ -84,12 +85,17 @@ class Injector():
 			else:
 				TotMuN+=MuN
 				
+			#Draws random number from exp. value
 			n_signal = np.random.poisson(MuN)
 
 			sam_ev = np.empty((n_signal, ), dtype=mc.dtype)
 			if n_signal < 1:
 				continue
-			p_select = SourceMC['ow']/np.sum(SourceMC['ow'])           
+			#Normalises the OneWeights
+			p_select = SourceMC['ow']/np.sum(SourceMC['ow'])
+			
+			#*****************************************************************************************************
+			#Select the events			
 			ind = np.random.choice(len(SourceMC['ow']), size=n_signal, p=p_select)
 			
 			beta = [np.random.uniform(0., 2.*np.pi) if i in ind[:k] else 0.
@@ -97,6 +103,7 @@ class Injector():
 			sam_ev = SourceMC[ind]
 			sam_ev = self.rotate_struct(sam_ev, source['ra'], source['dec'], beta)
 
+			#Generates rand. # according to Time profile
 			if self.UseTime == True:
 				sam_ev['timeMJD'] = self.GenerateNRandomNumbers(n_signal) + source['discoverydate_mjd']
 				sam_ev = self.CheckTimeBorders(sam_ev, )
@@ -104,34 +111,33 @@ class Injector():
 			sig_events = np.concatenate( (sig_events, sam_ev) )
 #            print source['name'], MuN, len(sources)
 #        print(TotMuN, len(sig_events))
-		return sig_events   
+		return sig_events
 		
 
 	def CheckTimeBorders(self, sam_ev, ):
 		mask = np.logical_and(sam_ev['timeMJD']>self.DataStart, sam_ev['timeMJD']<self.DataEnd)
 		return sam_ev[mask]
-		  
+
 		
 	def merge_struct_arrays(self, data1, data2):
 		dataFinal = np.concatenate( (data1, data2) )
 		return dataFinal
 
-
 	def scramble_exp_data(self, exp):
 		"""Scrambles "Experimental" data set.
-		If the data if run in "unblinded" mode, returns the dataset and a warning.
-		If NOT run in Unblinded mode, then produces a new dataset,
-		drawing values randomly from the original dataset.	
+		If the data is unblinded, returns the dataset and a warning.
+		If not unblinded, then produces a new dataset,
+		drawing values randomly from the original dataset.
 		"""
-		if self.Unblind==False:
-			if self.BootStrap==True:
+		if self.Unblind is False:
+			if self.BootStrap is True:
 				N_tot = len(exp)
 				#Produces N_tot random integers, each between 0 and N_tot
 				x = np.random.choice(N_tot, N_tot)
-				#Reassigns each entry of exp to a randomly selected value from the dataset 
+				#Reassigns each entry of exp to a randomly selected value from the dataset
 				exp = exp[x]
 			#Assigns a flat random distribution for Right Ascension
-			exp['ra'] = np.random.uniform(0, 2*np.pi, size=len(exp))
+			exp['ra'] = np.random.uniform(0, 2*np.pi, size = len(exp))
 			#Randomly reorders the times
 			np.random.shuffle(exp['timeMJD'])
 		else:
@@ -140,22 +146,22 @@ class Injector():
 	
 	def inject_signal_events(self, exp, mc, sources, k=0., ):
 		sig_events = self.generate_sig_events(sources, mc, k)
-		exp = self.scramble_exp_data(exp)           
+		exp = self.scramble_exp_data(exp)
 		data = self.merge_struct_arrays(exp, sig_events)
 		return data, sig_events
 	
 	
-	def rotate2(self, ra1, dec1, ra2, dec2, SourceRa, SourceDec, beta):           
+	def rotate2(self, ra1, dec1, ra2, dec2, SourceRa, SourceDec, beta):
 		delta_ra = ra1-ra2
 		delta_dec = dec1-dec2
 		ra = SourceRa + delta_ra
 		dec = SourceDec + delta_dec
 		mask = np.logical_or( np.array(dec > (np.pi/2.)), np.array(dec < (-np.pi/2.)) )
-		dec = np.arcsin(np.sin(dec))       
+		dec = np.arcsin(np.sin(dec))
 		ra = ra + mask*np.pi
 		ra = ra % (2.*np.pi)
 		return np.atleast_1d(ra), np.atleast_1d(dec)
-   
+
 
 	def rotate(self, ra1, dec1, ra2, dec2, ra3, dec3, beta):
 		""" Rotate ra1 and dec1 in a way that ra2 and dec2 will exactly map
@@ -173,10 +179,10 @@ class Injector():
 		x = np.array([hp.rotator.rotateDirection(
 												 hp.rotator.get_rotation_matrix((dp, -dz, 0.))[0],
 												 z, p) for z, p, dz, dp in zip(zen1, phi1, zen2, phi2)])
-											 
+
 		# Rotate **all** these vectors towards ra3, dec3
 		zen, phi = hp.rotator.rotateDirection(np.dot(hp.rotator.get_rotation_matrix((-phi3, 0, 0))[0],
-												  hp.rotator.get_rotation_matrix((0, zen3, 0.))[0]) ,x[:,0], x[:,1])						  
+												  hp.rotator.get_rotation_matrix((0, zen3, 0.))[0]) ,x[:,0], x[:,1])
 		dec = np.pi/2. - zen
 		ra = phi + np.pi
 		return np.atleast_1d(ra), np.atleast_1d(dec)

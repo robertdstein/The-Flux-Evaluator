@@ -112,7 +112,7 @@ class sensitivity():
 			f = lambda x: scp.stats.chi2.sf(x, fit_res[0]) * fraction - self.alpha
 			AlphaSigma = bisect(f, 0., 50.)
 			self.TestStatThreshold=AlphaSigma                   
-			if False:                
+			if True:                
 				from matplotlib import cm
 				col = [ cm.gist_rainbow(x) for x in np.linspace(0, 1, 20) ]
 				x = np.linspace(0., 50., 1.e5)
@@ -204,8 +204,8 @@ class sensitivity():
 			plt.legend(loc='best', fancybox=True, framealpha=1.)
 			plt.xlabel(r'Flux strength $E^2 \mathrm{d}N /\mathrm{d}E$ [ TeV cm$^{-2}$ s$^{-1}$]')
 			plt.xlabel(r'Signal Flux Strength')
-			plt.ylabel(r'chance for $\lambda$ over threashold')
-			plt.savefig('plots/test_stats/'+str(self.plot_path)+'.pdf')
+			plt.ylabel(r'chance for $\lambda$ over threshold')
+			plt.savefig(str(self.plot_path)+'sens.pdf')
 			plt.show()
 		try:
 			print('Polynom: ', brentq(f, FluxScaleMin, FluxScaleMax))
@@ -245,6 +245,8 @@ class sensitivity():
 		mask = x>0.
 		fraction = np.sum(mask)/float(len(mask))
 		fit_res = scp.stats.chi2.fit(x[mask], df=2., floc=0., fscale=1.)
+		
+		#Is this redundant?
 		if MeasuredLambda==0.:
 			FitPValue = 100.
 		else:
