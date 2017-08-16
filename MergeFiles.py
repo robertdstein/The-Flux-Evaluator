@@ -11,11 +11,13 @@ GenerationControlInstance = GenerationControl()
 
 root = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
 path = root + "results/results"
-OutPutPath = root + "merged/results.pkl"
+OutPutPath = root + "merged/results"
 PlotPath = root + "plots/"
+RunFast = True
 
 GenerationControlInstance.MergeTestResultPickles(DataPath=path,
-	OutPutPath=OutPutPath)
+	OutPutPath=OutPutPath, RunFast=RunFast)
 
-sens = sensitivity(path=OutPutPath, plot_path=PlotPath, plotting=True)
+sens = sensitivity(path=OutPutPath, plot_path=PlotPath,
+	plotting=True, RunFast=RunFast)
 sens.CreateSensitivyAllInOne()

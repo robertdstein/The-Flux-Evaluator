@@ -35,7 +35,11 @@ class GenerationControl(object, ):
 			else:
 				self.seed = seed
 			np.random.seed(self.seed)
-			path = path + '_' + str(k) + '_' + str(self.seed) + '.pkl'
+			if self.settings["RunFast"]:
+				path += "_Fast"
+			else:
+				path += "_Full"
+			path += '_' + str(k) + '_' + str(self.seed) + '.pkl'
 		test_stats = self.GenerateTrials(n_trials, k=k, )
 		self.write_result_to_file(path, k, [], test_stats)
 
@@ -70,7 +74,10 @@ class GenerationControl(object, ):
 
 		#Reads in the config variables for each season of data
 		data_conf = ConfigParser.ConfigParser()
-		data_conf.read("data_config.ini")
+		if self.settings["RunFast"]:
+			data_conf.read("data_config_fast.ini")
+		else:
+			data_conf.read("data_config.ini")
 
 		#Loops over each season, creating an LLh Object.
 		#The data is randomised, and the LLh function is spline-fitted.
@@ -87,59 +94,6 @@ class GenerationControl(object, ):
 			new_instance.InitEverythingForMultipleTrials()
 			self.seasons.append(new_instance)
 
-#		self.LLh_instanceIC40 = LLh(
-#				   ExpPath=tmpdir+'/FinalSample/IC40/exp/IC40_exp_corrected.npy',
-#				   MCPath=tmpdir+'/FinalSample/IC40/mc/IC40_nugen_corrected.npy',
-#				   AcceptanceWeightPath2 = tmpdir+'/DeclinationAcceptance/IC40',
-#				   Livetime= 375.539,
-#				   StartDataTakingMJD=54561.4746759,
-#				   EndDataTankingMJD=54964.1892245,
-#				   **self.settings)
-
-#		self.LLh_instanceIC59 = LLh(
-#				   ExpPath=tmpdir+'/FinalSample/IC59/exp/IC59_exp_corrected.npy',
-#				   MCPath=tmpdir+'/FinalSample/IC59/mc/IC59_nugen_corrected.npy',
-#				   AcceptanceWeightPath2 = tmpdir+'/DeclinationAcceptance/IC59',
-#				   Livetime= 348.138,
-#				   StartDataTakingMJD=54964.1892245,
-#				   EndDataTankingMJD=55347.2862153,
-#				   **self.settings)
-
-#		self.LLh_instanceIC79 = LLh(
-#				   ExpPath=tmpdir+'/FinalSample/IC79/exp/IC79_exp_corrected.npy',
-#				   MCPath=tmpdir+'/FinalSample/IC79/mc/IC79_nugen_corrected.npy',
-#				   AcceptanceWeightPath2 = tmpdir+'/DeclinationAcceptance/IC79',
-#				   Livetime= 315.506,
-#				   StartDataTakingMJD=55347.2862153,
-#				   EndDataTankingMJD=55694.4164699,
-#				   **self.settings)
-
-		#self.LLh_instanceIC86_1 = LLh(
-					#ExpPath=tmpdir + '/FinalSample/IC86_1/exp/IC86_1_exp_corrected.npy',
-					#MCPath=tmpdir + '/FinalSample/IC86_1/mc/IC86_1_nugen_corrected.npy',
-					#AcceptanceWeightPath2=tmpdir + '/DeclinationAcceptance/IC86_1',
-					#Livetime=332.61,
-					#StartDataTakingMJD=55694.4164699,
-					#EndDataTankingMJD=56062.420706,
-					#**self.settings)
-
-#		self.LLh_instanceIC86_2AndFollowing = LLh(
-#				   ExpPath=tmpdir+'/FinalSample/IC86_2AndFollowing/exp/IC86_2_3_4_exp_corrected.npy',
-#				   MCPath=tmpdir+'/FinalSample/IC86_2/mc/IC86_2_nugen_corrected.npy',
-#				   AcceptanceWeightPath2 = tmpdir+'/DeclinationAcceptance/IC86_2AndFollowing',
-#				   Livetime=330.38 + 359.95 + 367.21,
-#				   StartDataTakingMJD=56062.420706,
-#				   EndDataTankingMJD=57160.0440856,
-#				   **self.settings)
-
-		#Runs "InitEverything" for each configuration
-
-#		self.LLh_instanceIC40.InitEverythingForMultipleTrials()
-#		self.LLh_instanceIC59.InitEverythingForMultipleTrials()
-#		self.LLh_instanceIC79.InitEverythingForMultipleTrials()
-		#self.LLh_instanceIC86_1.InitEverythingForMultipleTrials()
-#		self.LLh_instanceIC86_2AndFollowing.InitEverythingForMultipleTrials()
-
 		#Loops over n_trials
 		for counter in range(n_trials):
 			#Prints the progress
@@ -151,46 +105,22 @@ class GenerationControl(object, ):
 				f = season.ProduceLLhFunction()
 				funcs.append(f)
 
-#			self.LLh_instanceIC40.
-#			self.f_IC40 =
-#
-#			self.LLh_instanceIC59.PrepareFakeDataSetAndEvalautePDF(k, )
-#			self.f_IC59 = self.LLh_instanceIC59.ProduceLLhFunction()
-#
-#			self.LLh_instanceIC79.PrepareFakeDataSetAndEvalautePDF(k, )
-#			self.f_IC79 = self.LLh_instanceIC79.ProduceLLhFunction()
-
-			#Apparently the best dataset
-
-			#self.LLh_instanceIC86_1.PrepareFakeDataSetAndEvalautePDF(k, )
-			#self.f_IC86_1 = self.LLh_instanceIC86_1.ProduceLLhFunction()
-
-#			self.LLh_instanceIC86_2AndFollowing.PrepareFakeDataSetAndEvalautePDF(k, )
-#			self.f_IC86_2AndFollowing = self.LLh_instanceIC86_2AndFollowing.ProduceLLhFunction()
-
 			def f_final(x):
 				"""The likelihood function to be minimised,
-				given the Ice Cube Dataset.
+				given the Ice Cube Dataset (specified in data_config).
 				"""
-				#***************************************************************
-				#Is this used?
-				NSignalTotal = 0.
-
-				#Loops over seasons
-
-#				seasons = [self.LLh_instanceIC40, self.LLh_instanceIC59, self.LLh_instanceIC79, self.LLh_instanceIC86_1, self.LLh_instanceIC86_2AndFollowing]
-				#seasons = [self.LLh_instanceIC86_1]
-
 				#Loops over each season of data
 				for season in self.seasons:
 					#If both "UseEnergy" and "FitGamma" are true, takes gamma from
 					#Otherwise sets Gamma to be the true value
-					if np.logical_and(self.settings['UseEnergy'] is True, self.settings['FitGamma'] is True):
+					if np.logical_and(self.settings['UseEnergy'] is True,
+						self.settings['FitGamma'] is True):
 						gamma = x[-1]
 					else:
 						gamma = season.InjectionGamma
 					for source in season.sources:
-						source['weight_acceptance'] = season.AcceptanceFitFunc(source['dec'], gamma)
+						source['weight_acceptance'] = season.AcceptanceFitFunc(
+							source['dec'], gamma)
 
 				#****************************************************************
 				#Loop over seasons again? Why not joined to previous?
@@ -235,20 +165,9 @@ class GenerationControl(object, ):
 					season.SeasonWeight = SeasonWeights[i]
 					season.sources['weight'] = SourceWeights[i]
 
-				#***********************************************************************************************************************
-				#Doesn't run
-				if False:
-					print('')
-					print('')
-					print('')
-					for season in self.seasons:
-						print season.SeasonWeight, season.sources['weight']
-
 				value = 0.0
 				for f in funcs:
 					value += f(x)
-#				return self.f_IC40(x)+self.f_IC59(x)+self.f_IC79(x)+self.f_IC86_1(x)+self.f_IC86_2AndFollowing(x)
-				#return self.f_IC86_1(x)
 				return value
 
 			test_stat_res = self.MinimizeLLh(f_final)
@@ -257,9 +176,6 @@ class GenerationControl(object, ):
 
 		for season in self.seasons:
 			del(season.SoB)
-		#**********************************************************************
-		#Is this actually used before being reinitialised?
-		#MemUse = str(float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1.e6)
 		return np.array(test_stats)
 
 	def MinimizeLLh(self, f_final):
@@ -362,18 +278,25 @@ class GenerationControl(object, ):
 		print ''
 		del(test_stat_results)
 
-	
 	def print_progress(self, counter, n_trials):
 		"""Prints the progress (fraction)
 		"""
-		stdout.write("\r%.1f %%" % (float(counter+1.)/n_trials*100.))
+		stdout.write("\r%.1f %%" % (float(counter + 1.) / n_trials * 100.))
 		stdout.flush()
 
-	def MergeTestResultPickles(self, DataPath='test_stat_results/test/test', OutPutPath = 'test_stat_results/test.pkl'):
+	def MergeTestResultPickles(self, DataPath='test_stat_results/test/test',
+			OutPutPath="test_stat_results/test", RunFast=False):
 		"""Searches for alll pickle files matching the DataPath path.
 		Merges these into a single pickle file, and saves it to OutPutPath.
 		Prints the combined results.
 		"""
+		if RunFast:
+			DataPath += "_Fast"
+			OutPutPath += "_Fast.pkl"
+		else:
+			DataPath += "_Full"
+			OutPutPath += "_Full.pkl"
+
 		#Creates an empty Pickle Path for results
 		if os.path.isfile(OutPutPath):
 			os.remove(OutPutPath)

@@ -27,13 +27,14 @@ settings = {'UseEnergy': True,
 				'SmearInjection': 0.0,
 				'MissTiming': 1. / 1.,
 				'SourcePath': src_dir + '/Catalog/catalog_stack10.npy',
+				'RunFast': True
 			}
 
 GenerationControlInstance = GenerationControl(settings)
 
 path = '/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results'
 
-k_values = np.array([0., 1., 2.0, 3.0, 4.0, 5.0])
+k_values = np.array([0., 1.0, 2.0])
 
 np.random.shuffle(k_values)
 

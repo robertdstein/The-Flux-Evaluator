@@ -26,16 +26,20 @@ class PDF():
 
 	def GetWeights(self, mc, gamma, ):
 		"""Returns a weights (array) given by
-		OneWeights x Energy weight
+		OneWeights * Energy_weights
 		"""
+		#Uses numexpr for faster processing
+		#lint:disable
 		ow = mc['ow']
 		trueE = mc['trueE']
 		weights = numexpr.evaluate('ow * trueE **(-gamma)')
+		#lint:enable
 		return weights
 
 	def _around(self, value):
-		"""Produces an array in which the value.precision is rounded to the nearest integer
-		Multiplies this by the precision and returns the array.
+		"""Produces an array in which the prescision of the value
+		is rounded to the nearest integer. This is then multiplied
+		by the precision, and the array is returned.
 		"""
 		return np.around(float(value) / self.precision) * self.precision
 
@@ -46,13 +50,16 @@ class PDF():
 		self._w_cache = np.nan
 
 	def SelectEventsInBand(self, source, data, ):
-		"""Selects events in a given sin declinatuion band.(+- 10 degrees)
+		"""Selects events in a given sin declination band
+		The width of the band is defined as 20 degrees.
+		This function, if followed by SelectEventsInBox(),
+		can be used to produce a square on the celestial sphere.
 		"""
-		#selects a band (in dec) of height 20 degrees (2*dec_bandwidth)
 		dec_bandwidth = np.deg2rad(10.)
 		min_dec = max(-np.pi / 2., source['dec'] - dec_bandwidth)
 		max_dec = min(np.pi / 2., source['dec'] + dec_bandwidth)
-		band_mask = ((data['sinDec'])>np.sin(min_dec)) & ((data['sinDec'])<np.sin(max_dec))
+		band_mask = ((data['sinDec']) > np.sin(min_dec)) & \
+			((data['sinDec']) < np.sin(max_dec))
 		data_band = data[band_mask]
 		N_all = len(data)
 		n_select = len(data_band)
@@ -61,17 +68,19 @@ class PDF():
 		return data_band
 
 	def SelectEventsInBox(self, source, data, ):
-		"""Only selects events in a given box.
-		The box is a square on the spehere surface, detrmined as an overlap of bands.
+		"""Selects events in a given ra band.
+		In combination with the declination band of SelectEventsInBand(),
+		this produces a square on the surface of the celestial sphere.
+		The width of the ra band is variable to account for sperical geometry
 		"""
-		#Selects a band (in ra) of variable width to account for sphere geometry
 		dec_bandwidth = np.deg2rad(10.)
-		min_dec = max(-np.pi/2., source['dec'] - dec_bandwidth)
-		max_dec = min(np.pi/2., source['dec'] + dec_bandwidth)
+		min_dec = max(-np.pi / 2., source['dec'] - dec_bandwidth)
+		max_dec = min(np.pi / 2., source['dec'] + dec_bandwidth)
 		cosFact = np.amin(np.cos([min_dec, max_dec]))
-		dPhi = np.amin([2.*np.pi, 2.*dec_bandwidth/cosFact])
-		ra_dist = np.fabs((data["ra"] - source['ra'] + np.pi) % (2.*np.pi) - np.pi)
-		mask = ra_dist < dPhi/2.
+		dPhi = np.amin([2. * np.pi, 2. * dec_bandwidth / cosFact])
+		ra_dist = np.fabs((data["ra"] - source['ra'] + np.pi)
+			% (2. * np.pi) - np.pi)
+		mask = ra_dist < dPhi / 2.
 		data_box = data[mask]
 		return data_box
 
@@ -80,9 +89,9 @@ class PDF():
 #==============================================================================
 
 	def weight(self, data, exp, mc, gamma):
-		"""Calculates the signal/Background function.
-		Uses Finite Difference Methods to calculate first/second derivatives.
-		Uses a Taylor series to estimate S(gamma)
+		"""Calculates the Signal/Background function.
+		Uses Finite Difference Methods to calculate 1st/2nd derivatives.
+		Uses a Taylor series to estimate S(gamma).
 		"""
 		#Sets g (gamma), and the precision/stepsize (dg or h)
 		g1 = self._around(gamma)
@@ -98,10 +107,14 @@ class PDF():
 			g0 = self._around(g1 - dg)
 			g2 = self._around(g1 + dg)
 
-			#Calculate Spline stuff (sig/background 2D histograms), giving y(g), y(g+h), y(g-h)
-			S0 = self.GenerateSplineStuff(exp, mc, gamma=g0).ev(data['logE'], data['sinDec'])
-			S1 = self.GenerateSplineStuff(exp, mc, gamma=g1).ev(data['logE'], data['sinDec'])
-			S2 = self.GenerateSplineStuff(exp, mc, gamma=g2).ev(data['logE'], data['sinDec'])
+			#Calculate Spline stuff (sig/background 2D histograms)
+			#Gives y(g), y(g+h), y(g-h)
+			S0 = self.GenerateSplineStuff(exp, mc, gamma=g0).ev(
+				data['logE'], data['sinDec'])
+			S1 = self.GenerateSplineStuff(exp, mc, gamma=g1).ev(
+				data['logE'], data['sinDec'])
+			S2 = self.GenerateSplineStuff(exp, mc, gamma=g2).ev(
+				data['logE'], data['sinDec'])
 
 			#Calculates Derivatives Using Finite Difference Methods (1st/2nd)
 			a = (S0 - 2. * S1 + S2) / (2. * dg ** 2)
@@ -127,7 +140,7 @@ class PDF():
 	def weightFAST(self, gamma, w_cache):
 		"""Quickly estimates the value of Signal/Background for Gamma.
 		Uses precalculated values for first and second derivatives.
-		Uses a Taylor series to estimate S(gamma)
+		Uses a Taylor series to estimate S(gamma).
 		"""
 		g1 = self._around(gamma)
 		dg = self.precision
@@ -135,17 +148,22 @@ class PDF():
 		g0 = self._around(g1 - dg)
 		g2 = self._around(g1 + dg)
 
+		#Uses Numexpr to quickly estimate S(gamma)
+		#lint:disable
 		S0 = w_cache[g0]
 		S1 = w_cache[g1]
 		S2 = w_cache[g2]
 
-		val = numexpr.evaluate('exp((S0 - 2.*S1 + S2) / (2. * dg**2) * (gamma - g1)**2 + (S2 - S0) / (2. * dg) * (gamma - g1) + S1)')
+		val = numexpr.evaluate("exp((S0 - 2.*S1 + S2) / (2. * dg**2) *" +
+			"(gamma - g1)**2 + (S2 - S0) / (2. * dg) * (gamma - g1) + S1)")
+		#lint:enable
 		return val
 
 	def weightFAST2(self, gamma, w_cache):
-		"""Calculates the signal/Background function, using precalculated values.
-		Uses Finite Difference Methods to calculate first and second derivatives.
-		Uses a Taylor series to estimate S(gamma)
+		"""Calculates the Signal/Background function.
+		Using precalculated values for the S(gamma) at different points.
+		Uses Finite Difference Methods to calculate 1st/2nd derivatives.
+		Uses a Taylor series to estimate S(gamma).
 		"""
 		g1 = self._around(gamma)
 		dg = self.precision
@@ -174,8 +192,13 @@ class PDF():
 				self.spline_cache[gamma] = self.GenerateSplineStuff(exp,
 					mc, gamma=gamma)
 
+#******************************************************************************************************
 	def GenerateBGWeightDictForAllGamma(self, exp):
-		"""Loops over spline_cache
+		"""Loops over each gamma points, and check if the point has been
+		added to the Background Weight Cache. If not, loads the associated
+		2D spline function. Using the array of experiental data, it converts
+		each event to a Log(sig/Bkg) value, using Log(Energy) and sin(Dec)
+		with the fitted function.
 		"""
 		for gamma in self.GammaSupportPoints:
 			if gamma in self.w_cache_BG.keys():
@@ -185,7 +208,14 @@ class PDF():
 				self.w_cache_BG[gamma] = self.spline_cache[g1].ev(exp['logE'],
 					exp['sinDec'])
 
+#*********************************************************************************************************
 	def GenerateSigWeightDictForAllGamma(self, sig_events):
+		"""Loops over each gamma points, and check if the point has been
+		added to the Signal Weight Cache. If not, loads the associated
+		2D spline function. Using the array of experiental data, it converts
+		each event to a Log(sig/Bkg) value, using Log(Energy) and sin(Dec)
+		with the fitted function.
+		"""
 		for gamma in self.GammaSupportPoints:
 			if gamma in self.w_cache_Sig.keys():
 				pass
@@ -200,7 +230,9 @@ class PDF():
 		Interpolates, with a spline function,
 		using the log of this 2D distribution.
 		"""
-		#Produces arrays from histograms for sin declination vs logE distribution (for exp/bkg and mc/sig)
+		#Produces arrays from histograms for sin(dec) vs logE distribution
+		#The first array is experimental (to simulate bkg)
+		#The second array is Monte Carlo (to simulate signal)
 		HBG = self.CreateEnergyHistForSplines(exp['sinDec'],
 			exp['logE'], weights=np.ones_like(exp['logE']))
 		HSig = self.CreateEnergyHistForSplines(np.sin(mc['trueDec']),
@@ -219,7 +251,7 @@ class PDF():
 		ratio[mask] = (HSig[mask] / HBG[mask])
 
 		#Finds the minimum ratio
-		min_ratio = np.amax(ratio)  # axis=0)
+		min_ratio = np.amax(ratio)
 		#Where true in sig and false in bkg, sets ratio to minimum ratio
 		np.copyto(ratio, min_ratio, where=DomainSig & ~DomainBG)
 
@@ -235,97 +267,77 @@ class PDF():
 		self.EnergyPDFSplineInterpolated = spline
 		return spline
 
-
 	def CreateEnergyHistForSplines(self, sinDec, logE, weights, ):
-		"""Produces normalised histograms of distribution of variable (sinDec)
-		and Log(Energy), for use in Spline interpolation.
+		"""Produces normalised histograms of distribution of variables
+		Sin(Dec) and Log(Energy), for use in Spline interpolation.
 		"""
 		EnergyBins = self.EnergyBins
 		sinDec_bins = self.sinDecBins
 		#Produces the histogrmas
 		h, binedges = np.histogramdd((logE, sinDec),
-								 bins=(EnergyBins, sinDec_bins),
-								 weights=weights)
+			bins=(EnergyBins, sinDec_bins),
+			weights=weights)
 		ndim = h.ndim
 		#Normalises histogram
-		norms = np.sum(h, axis=ndim-2)
+		norms = np.sum(h, axis=ndim - 2)
 		norms[norms == 0.] = 1.
 		h /= norms
 		return h
 
-#----------------------------------------------------------------------------------------------------------
-#IS THIS ANY DIFFERENT THAN ABOVE FUNCTION? No
-#----------------------------------------------------------------------------------------------------------
-
-	def CreateEnergyHist(self, sinDec, logE, weights, ):
-		EnergyBins = self.EnergyBins
-		sinDec_bins = self.sinDecBins
-		h, binedges = np.histogramdd((logE, sinDec),
-								 bins=(EnergyBins, sinDec_bins),
-								 weights=weights)
-		ndim = h.ndim
-		norms = np.sum(h, axis=ndim-2)
-		norms[norms == 0.] = 1.
-		h /= norms
-		return h
-
-		
-#=====================================================================================
+#==============================================================================
 #Background Functions
-#=====================================================================================
+#==============================================================================
 
 	def create_space_BG_pdf(self, exp, ):
 		"""Creates the spatial PDF for background.
-		Generates a histogram for the experimental distribution in sin declination.
+		Generates a histogram for the exp. distribution in sin declination.
 		Fits a spline function to the distribution, giving a spatial PDF.
 		Returns this spatial PDF.
 		"""
 		sinDec_bins = self.sinDecBins
 		sinDec_range = (np.min(sinDec_bins), np.max(sinDec_bins))
-		hist, bins = np.histogram(exp['sinDec'], density=True, bins=sinDec_bins, range=sinDec_range)
+		hist, bins = np.histogram(exp['sinDec'], density=True,
+			bins=sinDec_bins, range=sinDec_range)
 		bins = np.concatenate([bins[:1], bins, bins[-1:]])
 		hist = np.concatenate([hist[:1], hist, hist[-1:]])
 		bckg_spline = scipy.interpolate.InterpolatedUnivariateSpline(
 								(bins[1:] + bins[:-1]) / 2.,
 								np.log(hist), k=2)
 		return bckg_spline
-	
 
 	def EvaluateB(self, ):
 		data = self._ev
 		bckg_spline = self.bckg_spline_space
-		B_space = 1./2./np.pi * np.exp(bckg_spline(data["sinDec"]))
-		if self.UseTime == True:
-			B_time = np.ones_like(B_space) / (self.DataEnd-self.DataStart)
+		B_space = 1. / 2. / np.pi * np.exp(bckg_spline(data["sinDec"]))
+		if self.UseTime is True:
+			B_time = np.ones_like(B_space) / (self.DataEnd - self.DataStart)
 		else:
 			B_time = np.ones_like(B_space)
 		self._ev_B = B_space * B_time
 
-	
-#=====================================================================================
+#==============================================================================
 #Signal Functions
-#=====================================================================================
+#==============================================================================
 
 	def SpacePDFSignal(self, source, data, ):
-		distance = astro.angular_distance(data['ra'], data['dec'], source['ra'], source['dec'])
-		SpaceTerm = 1./(2.*np.pi*data['sigma']**2.)*np.exp(-0.5*(distance/data['sigma'])**2.)
+		distance = astro.angular_distance(data['ra'],
+			data['dec'], source['ra'], source['dec'])
+		SpaceTerm = 1. / ((2. * np.pi * data['sigma'] ** 2.) *
+			np.exp(-0.5 * (distance / data['sigma']) ** 2.))
 		return SpaceTerm
-		
-		
+
 	def TimePDFSignal(self, source, data, ):
 		TimeTerm = self.SingleTimePDF(data['timeMJD'], source)
 		return TimeTerm
-		
-	
+
 	def S_source(self, source, data, ):
 		SpaceTerm = self.SpacePDFSignal(source, data, )
-		if self.UseTime == True:
+		if self.UseTime is True:
 			TimeTerm = self.TimePDFSignal(source, data, )
 		else:
 			TimeTerm = np.ones_like(SpaceTerm)
 		return SpaceTerm * TimeTerm
-	
-	
+
 	def EvaluateS(self):
 		data = self._ev
 		sources = self.sources
@@ -335,73 +347,80 @@ class PDF():
 		for i in range(len(sources)):
 			self.SoB[i] = self.S_source(sources[i], data, )
 
-#=====================================================================================
+#==============================================================================
 #Time PDFs
-#=====================================================================================
-
+#==============================================================================
 
 	def AnalyticTimePDF(self, t, t_pp, DecayModelLenght):
 		t_max = DecayModelLenght
 		t = np.asarray(t)
 		r = np.zeros_like(t)
-		Norm = t_pp*(np.log(t_pp+t_max)-np.log(t_pp))
-	
-		mask = np.logical_and(t>=0., t<t_max)
-		r[mask] = (1.+t[mask]/t_pp)**-1.
+		Norm = t_pp * (np.log(t_pp + t_max) - np.log(t_pp))
+
+		mask = np.logical_and(t >= 0., t < t_max)
+		r[mask] = (1. + t[mask] / t_pp) ** -1.
 		r[mask] = r[mask] / Norm
 		return r
-	
+
 	def StepFunc(self, x, x_0):
-		return 0.5 * (np.sign(x-x_0)+1.)
+		return 0.5 * (np.sign(x - x_0) + 1.)
 
 	def BoxFunc(self, x, deltaX):
 		Norm = deltaX
-		return (self.StepFunc(x, 0.)-self.StepFunc(x, deltaX)) / Norm
+		return (self.StepFunc(x, 0.) - self.StepFunc(x, deltaX)) / Norm
 
-		
 	def ComputeSourceWeightsTime(self, ):
 		for source in self.sources:
-			if self.TimeModel=='Box':
-				t_start = min(max(self.DataStart, source['discoverydate_mjd']), self.DataEnd)
-				t_end = min(max(self.DataStart, source['discoverydate_mjd']+self.TimeBoxLenght), self.DataEnd)
+			if self.TimeModel == 'Box':
+				t_start = min(max(self.DataStart, source['discoverydate_mjd']),
+					self.DataEnd)
+				t_end = min(max(self.DataStart, source['discoverydate_mjd']
+					+ self.TimeBoxLenght), self.DataEnd)
 				TimeLengthInSeasons = t_end - t_start
 				TotNorm = self.TimeBoxLenght
-				source['weight_time'] = max(TimeLengthInSeasons/self.SeasonTimeSpan, 0.)
-				source['TimeNorm'] = max(TimeLengthInSeasons/TotNorm, 0.)
-			if self.TimeModel=='BoxPre':
-				t_start = min(max(self.DataStart, source['discoverydate_mjd']-self.TimeBoxLenght), self.DataEnd)
-				t_end = min(max(self.DataStart, source['discoverydate_mjd']), self.DataEnd)
+				source['weight_time'] = max(TimeLengthInSeasons /
+					self.SeasonTimeSpan, 0.)
+				source['TimeNorm'] = max(TimeLengthInSeasons / TotNorm, 0.)
+			if self.TimeModel == 'BoxPre':
+				t_start = min(max(self.DataStart, source['discoverydate_mjd']
+					- self.TimeBoxLenght), self.DataEnd)
+				t_end = min(max(self.DataStart, source['discoverydate_mjd']),
+					self.DataEnd)
 				TimeLengthInSeasons = t_end - t_start
 				TotNorm = self.TimeBoxLenght
-				source['weight_time'] = max(TimeLengthInSeasons/self.SeasonTimeSpan, 0.)
-				source['TimeNorm'] = max(TimeLengthInSeasons/TotNorm, 0.)
-			if self.TimeModel=='Decay':
+				source['weight_time'] = max(TimeLengthInSeasons /
+					self.SeasonTimeSpan, 0.)
+				source['TimeNorm'] = max(TimeLengthInSeasons /
+					TotNorm, 0.)
+			if self.TimeModel == 'Decay':
 				t_pp = self.Model_tpp
-				t_start = max(0., self.DataStart-(source['discoverydate_mjd']))
+				t_start = max(0., self.DataStart
+					- (source['discoverydate_mjd']))
 				t_end = min(self.DecayModelLenght,
-							max((self.DataEnd-source['discoverydate_mjd']), 0.))
-				TotNorm = t_pp * (np.log(self.DecayModelLenght+t_pp)-np.log(0.+t_pp))
-				SeasonNorm = t_pp * (np.log(t_end+t_pp)-np.log(t_start+t_pp))
-				source['TimeNorm'] = SeasonNorm/TotNorm
-				source['weight_time'] = (source['TimeNorm']*TotNorm)/self.SeasonTimeSpan
+					max((self.DataEnd - source['discoverydate_mjd']), 0.))
+				TotNorm = t_pp * (np.log(self.DecayModelLenght + t_pp)
+					- np.log(0. + t_pp))
+				SeasonNorm = t_pp * (np.log(t_end + t_pp)
+					- np.log(t_start + t_pp))
+				source['TimeNorm'] = SeasonNorm / TotNorm
+				source['weight_time'] = ((source['TimeNorm'] * TotNorm) /
+					self.SeasonTimeSpan)
 
-				
 	def SingleTimePDF(self, t, source):
 		t = np.asarray(t)
 		r = np.zeros_like(t)
-		if source['TimeNorm']>0.:
+		if source['TimeNorm'] > 0.:
 			Norm = source['TimeNorm']
 		else:
 			Norm = 1.
-		mask = np.logical_and(t>self.DataStart, t<self.DataEnd)
+		mask = np.logical_and(t > self.DataStart, t < self.DataEnd)
 		t = t[mask] - source['discoverydate_mjd']
 		r[mask] = self.NuLightCurveFunc(t) / Norm
 		return r
-				
-				
-			
+
 	def great_circle_distance(self, ra_1, dec_1, ra_2, dec_2, ):
-		delta_dec = np.abs(dec_1-dec_2)
-		delta_ra = np.abs(ra_1-ra_2)
-		x = (np.sin(delta_dec/2.))**2. + np.cos(dec_1)*np.cos(dec_2) * (np.sin(delta_ra/2.))**2.
-		return 2.*np.arcsin(np.sqrt(x))
+		delta_dec = np.abs(dec_1 - dec_2)
+		delta_ra = np.abs(ra_1 - ra_2)
+		x = (np.cos(dec_1) * np.cos(dec_2) * (np.sin(delta_ra / 2.)) ** 2. +
+			(np.sin(delta_dec / 2.)) ** 2.)
+		return 2. * np.arcsin(np.sqrt(x))
