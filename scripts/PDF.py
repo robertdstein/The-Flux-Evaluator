@@ -1,19 +1,12 @@
 import numpy as np
-from scipy.stats import norm
 from icecube import astro
 
 import scipy
-from scipy.interpolate import UnivariateSpline
-from scipy.integrate import romberg
-import scipy as scp
-
-import sys
 
 import numexpr
 numexpr.set_num_threads(1)
 
 import scipy.interpolate
-from scipy import interpolate
 
 
 class PDF():
@@ -25,7 +18,7 @@ class PDF():
 #==============================================================================
 
 	def GetWeights(self, mc, gamma, ):
-		"""Returns a weights (array) given by
+		"""Returns a weight array given by
 		OneWeights * Energy_weights
 		"""
 		#Uses numexpr for faster processing
@@ -305,6 +298,7 @@ class PDF():
 								np.log(hist), k=2)
 		return bckg_spline
 
+#*****************************************************************************************************************************
 	def EvaluateB(self, ):
 		data = self._ev
 		bckg_spline = self.bckg_spline_space
@@ -320,6 +314,10 @@ class PDF():
 #==============================================================================
 
 	def SpacePDFSignal(self, source, data, ):
+		"""Calculates the angular distance between the source and the data.
+		Uses a Gaussian PDF function, centered on the source.
+		Returns the value of the Gausssian at the given distance.
+		"""
 		distance = astro.angular_distance(data['ra'],
 			data['dec'], source['ra'], source['dec'])
 		SpaceTerm = (1. / (2. * np.pi * data['sigma'] ** 2.) *
@@ -407,6 +405,12 @@ class PDF():
 					self.SeasonTimeSpan)
 
 	def SingleTimePDF(self, t, source):
+		"""Processes the array of event times.
+		Checks if there is Time Normalisation, or sets it to 1.
+		Checks if each event occured in the given season.
+		If a time passes, rescales to a time since source discovery.
+		
+		"""
 		t = np.asarray(t)
 		r = np.zeros_like(t)
 		if source['TimeNorm'] > 0.:

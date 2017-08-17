@@ -133,7 +133,8 @@ class GenerationControl(object, ):
 												season.sources['weight_acceptance'])
 
 				#Puts the weights into a matrix
-				WeightMatrix = np.zeros((len(self.seasons), len(self.seasons[0].sources)), dtype=float)
+				WeightMatrix = np.zeros((len(self.seasons),
+					len(self.seasons[0].sources)), dtype=float)
 				for i, season in enumerate(self.seasons):
 					WeightMatrix[i] = season.sources['weight']
 
@@ -159,6 +160,7 @@ class GenerationControl(object, ):
 					season.SeasonWeight = SeasonWeights[i]
 					season.sources['weight'] = SourceWeights[i]
 
+				#Loops over each LLh function to give overall LLh
 				value = 0.0
 				for f in funcs:
 					value += f(x)
@@ -280,7 +282,7 @@ class GenerationControl(object, ):
 
 	def MergeTestResultPickles(self, DataPath='test_stat_results/test/test',
 			OutPutPath="test_stat_results/test", ConfigName="Fast_with_fit"):
-		"""Searches for alll pickle files matching the DataPath path.
+		"""Searches for all pickle files matching the DataPath path.
 		Merges these into a single pickle file, and saves it to OutPutPath.
 		Prints the combined results.
 		"""
