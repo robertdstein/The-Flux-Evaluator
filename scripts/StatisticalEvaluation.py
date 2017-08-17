@@ -36,14 +36,10 @@ plt.rcParams['lines.linewidth'] = 1.
 class sensitivity():
 	def __init__(self, path='test_stat_results/test_setup',
 			plot_path='plots/LikelihoodLandscape/test_setup',
-			plotting=False, UpperLimit=False, RunFast=False):
+			plotting=False, UpperLimit=False, ConfigName="Fast_with_fit"):
 
-		if RunFast:
-			path += "_Fast.pkl"
-			plot_path += "Fast_"
-		else:
-			path += "_Full.pkl"
-			plot_path += "Full_"
+		path += "_" + ConfigName + ".pkl"
+		plot_path += ConfigName + "_"
 
 		self.path = path
 		self.plot_path = plot_path

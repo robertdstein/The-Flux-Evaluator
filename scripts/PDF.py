@@ -322,7 +322,7 @@ class PDF():
 	def SpacePDFSignal(self, source, data, ):
 		distance = astro.angular_distance(data['ra'],
 			data['dec'], source['ra'], source['dec'])
-		SpaceTerm = 1. / ((2. * np.pi * data['sigma'] ** 2.) *
+		SpaceTerm = (1. / (2. * np.pi * data['sigma'] ** 2.) *
 			np.exp(-0.5 * (distance / data['sigma']) ** 2.))
 		return SpaceTerm
 

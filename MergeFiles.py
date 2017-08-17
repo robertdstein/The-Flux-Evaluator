@@ -7,17 +7,32 @@ Created on Mon Aug 14 15:13:22 2017
 from scripts.GenerationControl import GenerationControl
 from scripts.StatisticalEvaluation import sensitivity
 
-GenerationControlInstance = GenerationControl()
+import ConfigParser
+import argparse
 
-root = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
-path = root + "results/results"
-OutPutPath = root + "merged/results"
-PlotPath = root + "plots/"
-RunFast = True
+parser = argparse.ArgumentParser()
+parser.add_argument("-c", "--config", default="Fast_with_fit")
 
-GenerationControlInstance.MergeTestResultPickles(DataPath=path,
-	OutPutPath=OutPutPath, RunFast=RunFast)
+cfg = parser.parse_args()
 
-sens = sensitivity(path=OutPutPath, plot_path=PlotPath,
-	plotting=True, RunFast=RunFast)
-sens.CreateSensitivyAllInOne()
+conf = ConfigParser.ConfigParser()
+conf.read("config.ini")
+
+if cfg.config not in conf._sections:
+	print "Searching for config section", cfg.config, "in", conf.sections()
+	raise Exception("Config file not found.")
+
+else:
+	GenerationControlInstance = GenerationControl()
+
+	root = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
+	path = root + "results/results"
+	OutPutPath = root + "merged/results"
+	PlotPath = root + "plots/"
+
+	GenerationControlInstance.MergeTestResultPickles(DataPath=path,
+		OutPutPath=OutPutPath, ConfigName=cfg.config)
+
+	sens = sensitivity(path=OutPutPath, plot_path=PlotPath,
+		plotting=True, ConfigName=cfg.config)
+	sens.CreateSensitivyAllInOne()

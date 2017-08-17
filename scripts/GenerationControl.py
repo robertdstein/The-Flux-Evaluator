@@ -35,11 +35,8 @@ class GenerationControl(object, ):
 			else:
 				self.seed = seed
 			np.random.seed(self.seed)
-			if self.settings["RunFast"]:
-				path += "_Fast"
-			else:
-				path += "_Full"
-			path += '_' + str(k) + '_' + str(self.seed) + '.pkl'
+			path += "_" + self.settings["ConfigName"]
+			path += '__' + str(k) + '_' + str(self.seed) + '.pkl'
 		test_stats = self.GenerateTrials(n_trials, k=k, )
 		self.write_result_to_file(path, k, [], test_stats)
 
@@ -74,10 +71,7 @@ class GenerationControl(object, ):
 
 		#Reads in the config variables for each season of data
 		data_conf = ConfigParser.ConfigParser()
-		if self.settings["RunFast"]:
-			data_conf.read("data_config_fast.ini")
-		else:
-			data_conf.read("data_config.ini")
+		data_conf.read("data_configs/" + self.settings["DataConfig"])
 
 		#Loops over each season, creating an LLh Object.
 		#The data is randomised, and the LLh function is spline-fitted.
@@ -285,24 +279,20 @@ class GenerationControl(object, ):
 		stdout.flush()
 
 	def MergeTestResultPickles(self, DataPath='test_stat_results/test/test',
-			OutPutPath="test_stat_results/test", RunFast=False):
+			OutPutPath="test_stat_results/test", ConfigName="Fast_with_fit"):
 		"""Searches for alll pickle files matching the DataPath path.
 		Merges these into a single pickle file, and saves it to OutPutPath.
 		Prints the combined results.
 		"""
-		if RunFast:
-			DataPath += "_Fast"
-			OutPutPath += "_Fast.pkl"
-		else:
-			DataPath += "_Full"
-			OutPutPath += "_Full.pkl"
+		DataPath += "_" + ConfigName
+		OutPutPath += "_" + ConfigName + ".pkl"
 
 		#Creates an empty Pickle Path for results
 		if os.path.isfile(OutPutPath):
 			os.remove(OutPutPath)
 
 		#returns a list of all files matching the path given
-		FileList = glob.glob(DataPath + '_*.pkl')
+		FileList = glob.glob(DataPath + '__*.pkl')
 
 		test_stat_results = {}
 
