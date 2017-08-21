@@ -13,9 +13,9 @@ class PDF():
 	def __init__(self, ):
 		pass
 
-#==============================================================================
-#Tool Part
-#==============================================================================
+# ==============================================================================
+# Tool Part
+# ==============================================================================
 
 	def GetWeights(self, mc, gamma, ):
 		"""Returns a weight array given by
@@ -409,7 +409,6 @@ class PDF():
 		Checks if there is Time Normalisation, or sets it to 1.
 		Checks if each event occured in the given season.
 		If a time passes, rescales to a time since source discovery.
-		
 		"""
 		t = np.asarray(t)
 		r = np.zeros_like(t)

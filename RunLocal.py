@@ -26,6 +26,8 @@ else:
 	seed = np.random.randint(0, 4294967295)
 	np.random.seed(seed)
 
+	data_conf_dir = root + "data_configs/" + conf.get(cfg.config, "DataConfig")
+	print data_conf_dir
 	settings = {'UseEnergy': eval(conf.get(cfg.config, "UseEnergy")),
 					'FitGamma': eval(conf.get(cfg.config, "FitGamma")),
 					'FixedGamma': float(conf.get(cfg.config, "FixedGamma")),
@@ -46,7 +48,7 @@ else:
 						cfg.config, "SmearInjection")),
 					'MissTiming': eval(conf.get(cfg.config, "MissTiming")),
 					'SourcePath': cat_dir + conf.get(cfg.config, "CatName"),
-					'DataConfig': conf.get(cfg.config, "DataConfig"),
+					'DataConfig': data_conf_dir,
 					'ConfigName': cfg.config
 					}
 

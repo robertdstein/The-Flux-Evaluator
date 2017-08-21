@@ -26,9 +26,9 @@ class LLh(PDF, Injector):
 	"""A class for the Log Likelihood.
 	"""
 	def __init__(self, **kwargs):
-		#Bins for energy (Tev?)
+		# Bins for energy (Tev?)
 		self.EnergyBins = np.linspace(1., 10., 40 + 1)
-		#Bins for sin declination (not evenly spaced)
+		# Bins for sin declination (not evenly spaced)
 		self.sinDecBins = np.unique(np.concatenate([
 								np.linspace(-1., -0.9, 2 + 1),
 								np.linspace(-0.9, -0.2, 8 + 1),
@@ -36,19 +36,19 @@ class LLh(PDF, Injector):
 								np.linspace(0.2, 0.9, 12 + 1),
 								np.linspace(0.9, 1., 2 + 1),
 								]))
-		#Provides grid values for spectral index (gamma)
+		# Provides grid values for spectral index (gamma)
 		self.GammaGrid = np.linspace(0, 5., 20 + 1)
-		#Sets precision
+		# Sets precision
 		self.precision = .1
 
-		#Sets weights as nan for some crazy reason
+		# Sets weights to default value of nan
 		self.SeasonWeight = np.nan
 		self.AcceptanceWeight = np.nan
 
-		#Sets "_..." to False
+		# Sets "_..." to False
 		self._ReturnInjectorNExp = False
 
-		#Initialises empty caches
+		# Initialises empty caches
 		self._g1 = np.nan
 		self._w_cache = np.nan
 		self.w_cache = dict()
@@ -56,69 +56,68 @@ class LLh(PDF, Injector):
 		self.w_cache_BG = dict()
 		self.w_cache_Sig = dict()
 
-		#Produces a set (i.e no duplicates) of datapoints for gamma
-		#This is best on 33 points between 0.9 and 4.1
-		#Each point is modified by _around(i)
-		#Useful for different precisions, where rounding errors might
-		#otherwise lead to duplicates in set
+		# Produces a set (i.e no duplicates) of datapoints for gamma
+		# This is best on 33 points between 0.9 and 4.1
+		# Each point is modified by _around(i)
+		# Useful for different precisions, where rounding errors might
+		# otherwise lead to duplicates in set
 		self.GammaSupportPoints = set([self._around(i) for i in np.linspace(0.9, 4.1, 30 + 3)])
 
 		self.N_all = np.nan
 		self.n_select = np.nan
 		self._exp = np.nan
 
-		#Sets start and end date for data taking (typo irrelevant)
+		# Sets start and end date for data taking (typo irrelevant)
 		self.DataStart = kwargs['StartDataTakingMJD']
 		self.DataEnd = kwargs['EndDataTankingMJD']
 
-		#Sets the livetime, and the total Season length
+		# Sets the livetime, and the total Season length
 		self.Livetime = kwargs['Livetime']
 		self.SeasonTimeSpan = self.DataEnd - self.DataStart
 
-		#Loads "Experimental" and "Monte Carlo" data sets (stored in .npy format)
+		# Loads "Experimental" and "Monte Carlo" data sets (stored in .npy format)
 		self.exp = np.load(kwargs['ExpPath'])
 		self.mc = np.load(kwargs['MCPath'])
 
-		#***********************************************************************
-		#Loads sources from the given sourcepath
-		#Does something...
+		# ***********************************************************************
+		# Loads sources from the given sourcepath
+		# Does something...
 		self._sources2 = np.load(kwargs['SourcePath'])
-		self._sources = np.lib.recfunctions.append_fields(self._sources2, 'TimeNorm', data=np.ones_like(self._sources2['ra']))
-		del(self._sources2)
+		self._sources = np.lib.recfunctions.append_fields(
+			self._sources2, 'TimeNorm', data=np.ones_like(self._sources2['ra']))
+		del self._sources2
 
-		#************************************************************************
-		#AcceptancePath2 replaced some older variable?
-		#Interpolates (in 2D) a function for the Gamma and declination
+		# AcceptancePath2 replaced some older variable?
+		# Interpolates (in 2D) a function for the Gamma and declination
 		try:
-			DecBins = np.load(kwargs['AcceptanceWeightPath2'] + '_bins_dec.npy')
-			GammaBins = np.load(kwargs['AcceptanceWeightPath2'] + '_bins_gamma.npy')
+			dec_bins = np.load(kwargs['AcceptanceWeightPath2'] + '_bins_dec.npy')
+			gamma_bins = np.load(kwargs['AcceptanceWeightPath2'] + '_bins_gamma.npy')
 			values = np.load(kwargs['AcceptanceWeightPath2'] + '_values.npy')
-			f = interpolate.interp2d(DecBins, GammaBins, values, kind='linear')
+			f = interpolate.interp2d(dec_bins, gamma_bins, values, kind='linear')
 			self.AcceptanceFitFunc = f
-			del(f)
+			del f
 		except:
 			print('No Acceptance Files')
 
-		#Sets Use Energy, Fit Gamma and Fixed Gamma
+		# Sets Use Energy, Fit Gamma and Fixed Gamma
 		self.UseEnergy = kwargs['UseEnergy']
 		self.FitGamma = kwargs['FitGamma']
 		self.FixedGamma = kwargs['FixedGamma']
 
-		#Toggles using a box for sources to reduce runtime
+		# Toggles using a box for sources to reduce runtime
 		self.UseBox = kwargs['UseBox']
 
-		#*************************************************************************************************************************
-		#Sets Fit Weights (True/False for fitting...)
+		# Sets Fit Weights (True/False for fitting the weights of each)
 		self.FitWeights = kwargs['FitWeights']
 
-		#Sets UseTime and Time Model (Box/BoxPre/Decay)
+		# Sets UseTime and Time Model (Box/BoxPre/Decay)
 		self.UseTime = kwargs['UseTime']
 		self.TimeModel = kwargs['TimeModel']
 
-		#If fitting for time
+		# If fitting for time
 		if self.UseTime:
-			#**************************************************************************************************************************
-			#Adds a 'Discovery Delay' (10 days) which is subtracted from discovery date
+			# **************************************************************************************************************************
+			# Adds a 'Discovery Delay' (10 days) which is subtracted from discovery date
 			self.DiscDelay = 10.
 			self.sources['discoverydate_mjd'] = self.sources['discoverydate_mjd'] - self.DiscDelay
 
@@ -129,23 +128,22 @@ class LLh(PDF, Injector):
 				self.TimeBoxLenght = kwargs['TimeBoxLenght']
 
 			if self.TimeModel == 'Decay':
-				#******************************************************************************************************************************
-				#What is 'tpp'? Also Length is spelled wrong. Is this used?
+				# ******************************************************************************************************************************
+				# What is 'tpp'? Also Length is spelled wrong. Is this used?
 				self.Model_tpp = kwargs['Model_tpp']
 				self.DecayModelLenght = kwargs['DecayModelLenght']
 				self.Model_Length = self.DecayModelLenght
 
-		#****************************************************************************************************************************************
-		#Sets smear Injection and MissTiming
+		# ****************************************************************************************************************************************
+		# Sets smear Injection and MissTiming
 		self.SmearInjection = kwargs['SmearInjection']
 		self.MissTiming = kwargs['MissTiming']
 
-		#********************************************************************************************************************************************************
-		#Empty Dictionary that is filled by FindAndApplyBandMask?
+		# Creates empty dictionary, filled by Injector.FindAndApplyBandMask
 		self.InjectionBandMask = dict()
 
-		#***********************************************************************************************************************************************************
-		#If Injection Gamma is not given, sets it to 2. Then gives Injection Weights
+		# ***********************************************************************************************************************************************************
+		# If Injection Gamma is not given, sets it to 2. Then gives Injection Weights
 		if 'InjectionGamma' in kwargs.keys():
 			self.InjectionGamma = kwargs['InjectionGamma']
 		else:
@@ -153,39 +151,41 @@ class LLh(PDF, Injector):
 			self.WeightsInject = self.GetWeights(self.mc, self.InjectionGamma, )
 		print 'Injection Spectrum', self.InjectionGamma
 
-		#*************************************************************************************************************************************************************
-		#????
+		# Creates a weight cache with default value nan
 		self.WeightCache = np.nan
 
-		#Makes sure unblinding is false,
+		# Makes sure unblinding is false
 		self.Unblind = False
 
-		# If not unlinded, times are shuffled. Otherwise gives a warning.
+		# If not unblinded, times are shuffled. Otherwise gives a warning.
 		if self.Unblind is False:
 			np.random.shuffle(self.exp['timeMJD'])
 		else:
 			print('WARNING: Running in Unblinding Mode')
 
-		#*******************************************************************************************************************************************************************	
-		#Sets a default of Bootstrap=False, if not provided in init
+		# *******************************************************************************************************************************************************************
+		# Sets a default of Bootstrap=False, if not provided in init
 		self.BootStrap = False
 		try:
 			self.BootStrap = kwargs['BootStrap']
 		except:
 			pass
 
-#==============================================================================
-#Running Part
-#==============================================================================
-	#Designed for backwards compatibility, so self.sources reurns self._sources
+# ==============================================================================
+# Running Part
+# ==============================================================================
+	# Designed for backwards compatibility, so self.sources reurns self._sources
 	@property
 	def sources(self, ):
 		return self._sources
 
 	def PrepareFakeDataSetAndEvalautePDF(self, k, ):
-		"""Prepares a scrampled dataset
+		"""Prepares a scrambled dataset.
+
+		:param k: Flux scale
+		:return: scrambled dataset
 		"""
-		#Inititalises empty dictionaries and nan-values
+		# Initialises empty dictionaries and nan-values
 		self.w_cache = dict()
 		self.w_cache_Sig = dict()
 		self._ev = np.nan
@@ -194,8 +194,8 @@ class LLh(PDF, Injector):
 		self.EnergyWeightCache = np.nan
 		self.SoB = np.nan
 
-		#If UseBox, only selects events in Box,
-		#In either case, 'blinds' the experimental data
+		# If UseBox, only selects events in Box,
+		# In either case, 'blinds' the experimental data
 		if self.UseBox is True:
 			self.w_cache_BG = dict()
 			self._ev = self.SelectEventsInBand(self.sources[0], self.exp)
@@ -204,7 +204,7 @@ class LLh(PDF, Injector):
 		if self.UseBox is False:
 			self._ev = self.scramble_exp_data(self.exp)
 
-		#If UseEnergy, then
+		# If UseEnergy, then
 		if self.UseEnergy is True:
 			self.GenerateBGWeightDictForAllGamma(self._ev)
 

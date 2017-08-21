@@ -36,7 +36,7 @@ cp -R /afs/ifh.de/user/a/astasik/scratch/PS_Data/DeclinationAcceptance $TMPDIR
 
 eval $(/cvmfs/icecube.opensciencegrid.org/py2-v2/setup.sh)
 
-$SROOT/metaprojects/offline-software/V16-10-00/env-shell.sh python /afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py -c Fast_with_box
+$SROOT/metaprojects/offline-software/V16-10-00/env-shell.sh python /afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py -c Full_with_TDE
 
 cp $TMPDIR/${JOB_ID}_stdout.txt /afs/ifh.de/user/s/steinrob/Desktop/python/stacking/logs
 cp $TMPDIR/${JOB_ID}_stderr.txt /afs/ifh.de/user/s/steinrob/Desktop/python/stacking/logs

@@ -56,25 +56,25 @@ class GenerationControl(object, ):
 		"""
 		test_stats = []
 
-		#***********************************************************************
-		#Sets tmp directory (currently Alex's)
+		# ***********************************************************************
+		# Sets tmp directory (currently Alex's)
 		try:
 			tmpdir = os.environ['TMPDIR']
 		except KeyError:
-#			tmpdir ="/afs/ifh.de/user/s/steinrob/scratch/PS_Data"
+			# tmpdir ="/afs/ifh.de/user/s/steinrob/scratch/PS_Data"
 			tmpdir = "/afs/ifh.de/user/a/astasik/scratch/PS_Data/"
 
-		#Gives the memory usage
+		# Gives the memory usage
 		print 0, 'Memory usage: %s (Gb)' % self.memory_usage_ps()
 		MemUse = str(float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1.e6)
 		print 'Memory usage max: %s (Gb)' % MemUse
 
-		#Reads in the config variables for each season of data
+		# Reads in the config variables for each season of data
 		data_conf = ConfigParser.ConfigParser()
-		data_conf.read("data_configs/" + self.settings["DataConfig"])
+		data_conf.read(self.settings["DataConfig"])
 
-		#Loops over each season, creating an LLh Object.
-		#The data is randomised, and the LLh function is spline-fitted.
+		# Loops over each season, creating an LLh Object.
+		# The data is randomised, and the LLh function is spline-fitted.
 		self.seasons = []
 		for season in data_conf._sections:
 			new_instance = LLh(
@@ -88,9 +88,9 @@ class GenerationControl(object, ):
 			new_instance.InitEverythingForMultipleTrials()
 			self.seasons.append(new_instance)
 
-		#Loops over n_trials
+		# Loops over n_trials
 		for counter in range(n_trials):
-			#Prints the progress
+			# Prints the progress
 			self.print_progress(counter, n_trials)
 
 			funcs = []
@@ -103,10 +103,10 @@ class GenerationControl(object, ):
 				"""The likelihood function to be minimised,
 				given the Ice Cube Dataset (specified in data_config).
 				"""
-				#Loops over each season of data
+				# Loops over each season of data
 				for season in self.seasons:
-					#If both "UseEnergy" and "FitGamma" are true, takes gamma from
-					#Otherwise sets Gamma to be the true value
+					# If both "UseEnergy" and "FitGamma" are true, takes gamma from
+					# Otherwise sets Gamma to be the true value
 					if np.logical_and(self.settings['UseEnergy'] is True,
 						self.settings['FitGamma'] is True):
 						gamma = x[-1]
@@ -116,8 +116,8 @@ class GenerationControl(object, ):
 						source['weight_acceptance'] = season.AcceptanceFitFunc(
 							source['dec'], gamma)
 
-				#****************************************************************
-				#Loop over seasons again? Why not joined to previous?
+				# ****************************************************************
+				# Loop over seasons again? Why not joined to previous?
 				for season in self.seasons:
 					season.sources['weight_distance'] = season.sources['distance'] ** (-2.)
 					#What is this for?
@@ -175,15 +175,15 @@ class GenerationControl(object, ):
 		return np.array(test_stats)
 
 	def MinimizeLLh(self, f_final):
-		#Gives number of sources FOR GIVEN TRIAL?
+		# Gives number of sources FOR GIVEN TRIAL?
 		nSources = len(np.load(self.settings['SourcePath']))
 
-		#Checks whether to fit weights and gamma, and whether to use energy
-		#Then minimises for the chosen configuration
-		#Provides appropriate bounds the chosen configuration
+		# Checks whether to fit weights and gamma, and whether to use energy
+		# Then minimises for the chosen configuration
+		# Provides appropriate bounds the chosen configuration
 
-		#If fit weights loops over a bound for each source!
-		#If not, then gives only one set of bound
+		# If fit weights loops over a bound for each source!
+		# If not, then gives only one set of bound
 
 		if self.settings['FitWeights'] is True:
 			if self.settings['UseEnergy'] is True:
@@ -223,17 +223,17 @@ class GenerationControl(object, ):
 				res = scp.optimize.fmin_l_bfgs_b(f_final, 1.,
 					bounds=[(0., 1000.)], approx_grad=True)
 
-		#Returns a value for LLH at minimum
+		# Returns a value for LLH at minimum
 		test_stat_res = -res[1]
 		return test_stat_res
 
 	def write_result_to_file(self, path, k, n_fit, test_stats):
 		"""Adds information to a pickle file.
 		"""
-		#Checks if Pickle file exists
+		# Checks if Pickle file exists
 		self.check_if_pkl_file_exists(path)
-		#******************************************************************
-		#Opens the pickle file and creates a copy of the data?
+
+		# Opens the pickle file and creates a copy of the data?
 		pkl_file = open(path, 'rb')
 		test_stat_results = pickle.load(pkl_file)
 		pkl_file.close()
@@ -242,7 +242,7 @@ class GenerationControl(object, ):
 			test_stat_results[k] = np.append(test_stat_results[k], test_stats)
 		else:
 			test_stat_results[k] = test_stats
-		#Saves the updated pickle file
+		# Saves the updated pickle file
 		pkl_file = open(path, 'wb')
 		pickle.dump(test_stat_results, pkl_file)
 		pkl_file.close()
@@ -272,7 +272,7 @@ class GenerationControl(object, ):
 		for key in np.sort(test_stat_results.keys()):
 			print key, len(test_stat_results[key])
 		print ''
-		del(test_stat_results)
+		del test_stat_results
 
 	def print_progress(self, counter, n_trials):
 		"""Prints the progress (fraction)
@@ -289,27 +289,27 @@ class GenerationControl(object, ):
 		DataPath += "_" + ConfigName
 		OutPutPath += "_" + ConfigName + ".pkl"
 
-		#Creates an empty Pickle Path for results
+		# Creates an empty Pickle Path for results
 		if os.path.isfile(OutPutPath):
 			os.remove(OutPutPath)
 
-		#returns a list of all files matching the path given
-		FileList = glob.glob(DataPath + '__*.pkl')
+		# Returns a list of all files matching the path given
+		file_list = glob.glob(DataPath + '__*.pkl')
 
 		test_stat_results = {}
 
-		#Loops over each file and adds it to the combined File
-		for SingleFile in FileList:
-			pkl_file = open(SingleFile, 'rb')
-			SingleResult = pickle.load(pkl_file)
+		# Loops over each file and adds it to the combined File
+		for singlefile in file_list:
+			pkl_file = open(singlefile, 'rb')
+			single_result = pickle.load(pkl_file)
 			pkl_file.close()
-			for k in SingleResult.keys():
+			for k in single_result.keys():
 				if k in test_stat_results.keys():
-					test_stat_results[k] = np.append(test_stat_results[k], SingleResult[k])
+					test_stat_results[k] = np.append(test_stat_results[k], single_result[k])
 				else:
-					test_stat_results[k] = SingleResult[k]
+					test_stat_results[k] = single_result[k]
 
-		#Saves merged file and prints results
+		# Saves merged file and prints results
 		pkl_file = open(OutPutPath, 'wb')
 		pickle.dump(test_stat_results, pkl_file)
 		pkl_file.close()

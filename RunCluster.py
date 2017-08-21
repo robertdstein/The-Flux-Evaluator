@@ -19,12 +19,12 @@ def wait():
 		if j > 0:
 			print tmp
 			j = 0
-		time.sleep(10)
+		time.sleep(30)
 		i += 1
 		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
 		tmp = str(proc.stdout.read())
 
-cluster_command = "qsub -t 1-5:1 SubmitOne.sh"
+cluster_command = "qsub -t 1-50:1 SubmitOne.sh"
 print time.asctime(time.localtime()), cluster_command, "\n"
 os.system(cluster_command)
 
