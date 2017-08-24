@@ -1,0 +1,97 @@
+/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/data_configs/full.ini
+0.6
+0 Memory usage: 0.10178125 (Gb)
+Memory usage max: 0.104232 (Gb)
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Full_with_DaiFang_TDE__0.6_1668278669.pkl  created
+
+---------------------
+0.0
+0 Memory usage: 1.480875 (Gb)
+Memory usage max: 1.74542 (Gb)
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Full_with_DaiFang_TDE__0.0_1668278670.pkl  created
+
+---------------------
+0.8
+0 Memory usage: 2.82213671875 (Gb)
+Memory usage max: 3.10272 (Gb)
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Full_with_DaiFang_TDE__0.8_1668278671.pkl  created
+
+---------------------
+0.4
+0 Memory usage: 4.17778125 (Gb)
+Memory usage max: 4.50346 (Gb)
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Full_with_DaiFang_TDE__0.4_1668278672.pkl  created
+
+---------------------
+1.0
+0 Memory usage: 5.53698828125 (Gb)
+Memory usage max: 5.884564 (Gb)
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Full_with_DaiFang_TDE__1.0_1668278673.pkl  created
+
+---------------------
+0.2
+0 Memory usage: 6.890453125 (Gb)
+Memory usage max: 7.265988 (Gb)
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Full_with_DaiFang_TDE__0.2_1668278674.pkl  created
+
+---------------------

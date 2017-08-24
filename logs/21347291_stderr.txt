@@ -2,8 +2,8 @@ Traceback (most recent call last):
   File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py", line 67, in <module>
     path=path, seed=seed)
   File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 40, in GenerateTestStatistics
-    test_stats = self.GenerateTrials(n_trials, k=k, )
-  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 169, in GenerateTrials
+    test_stats = self.generate_trials(n_trials, k=k, )
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 169, in generate_trials
     test_stat_res = self.MinimizeLLh(f_final)
   File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 214, in MinimizeLLh
     seed = scipy.optimize.brute(f_final, rranges, finish=None)

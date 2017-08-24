@@ -23,330 +23,326 @@ import resource
 
 
 class LLh(PDF, Injector):
-	"""A class for the Log Likelihood.
-	"""
-	def __init__(self, **kwargs):
-		# Bins for energy (Tev?)
-		self.EnergyBins = np.linspace(1., 10., 40 + 1)
-		# Bins for sin declination (not evenly spaced)
-		self.sinDecBins = np.unique(np.concatenate([
-								np.linspace(-1., -0.9, 2 + 1),
-								np.linspace(-0.9, -0.2, 8 + 1),
-								np.linspace(-0.2, 0.2, 15 + 1),
-								np.linspace(0.2, 0.9, 12 + 1),
-								np.linspace(0.9, 1., 2 + 1),
-								]))
-		# Provides grid values for spectral index (gamma)
-		self.GammaGrid = np.linspace(0, 5., 20 + 1)
-		# Sets precision
-		self.precision = .1
 
-		# Sets weights to default value of nan
-		self.SeasonWeight = np.nan
-		self.AcceptanceWeight = np.nan
+    """A class for the Log Likelihood. Handles loading the data, preparing
+    randomised datasets based on the data, and calculates the Log Likelihood
+    for a given parameter set.
 
-		# Sets "_..." to False
-		self._ReturnInjectorNExp = False
+    """
 
-		# Initialises empty caches
-		self._g1 = np.nan
-		self._w_cache = np.nan
-		self.w_cache = dict()
-		self.spline_cache = dict()
-		self.w_cache_BG = dict()
-		self.w_cache_Sig = dict()
+    def __init__(self, **kwargs):
+        # Bins for energy (Tev?)
+        self.EnergyBins = np.linspace(1., 10., 40 + 1)
+        # Bins for sin declination (not evenly spaced)
+        self.sinDecBins = np.unique(np.concatenate([
+                                np.linspace(-1., -0.9, 2 + 1),
+                                np.linspace(-0.9, -0.2, 8 + 1),
+                                np.linspace(-0.2, 0.2, 15 + 1),
+                                np.linspace(0.2, 0.9, 12 + 1),
+                                np.linspace(0.9, 1., 2 + 1),
+                                ]))
 
-		# Produces a set (i.e no duplicates) of datapoints for gamma
-		# This is best on 33 points between 0.9 and 4.1
-		# Each point is modified by _around(i)
-		# Useful for different precisions, where rounding errors might
-		# otherwise lead to duplicates in set
-		self.GammaSupportPoints = set([self._around(i) for i in np.linspace(0.9, 4.1, 30 + 3)])
+        # Provides grid values for spectral index (gamma)
+        self.GammaGrid = np.linspace(0, 5., 20 + 1)
+        # Sets precision
+        self.precision = .1
 
-		self.N_all = np.nan
-		self.n_select = np.nan
-		self._exp = np.nan
+        # Sets weights to default value of nan
+        self.SeasonWeight = np.nan
+        self.AcceptanceWeight = np.nan
 
-		# Sets start and end date for data taking (typo irrelevant)
-		self.DataStart = kwargs['StartDataTakingMJD']
-		self.DataEnd = kwargs['EndDataTankingMJD']
+        # Sets "_..." to False
+        self._ReturnInjectorNExp = False
 
-		# Sets the livetime, and the total Season length
-		self.Livetime = kwargs['Livetime']
-		self.SeasonTimeSpan = self.DataEnd - self.DataStart
+        # Initialises empty caches
+        self._g1 = np.nan
+        self._w_cache = np.nan
+        self.w_cache = dict()
+        self.spline_cache = dict()
+        self.w_cache_BG = dict()
+        self.w_cache_Sig = dict()
 
-		# Loads "Experimental" and "Monte Carlo" data sets (stored in .npy format)
-		self.exp = np.load(kwargs['ExpPath'])
-		self.mc = np.load(kwargs['MCPath'])
+        # Produces a set (i.e no duplicates) of datapoints for gamma
+        # This is best on 33 points between 0.9 and 4.1
+        # Each point is modified by _around(i)
+        # Useful for different precisions, where rounding errors might
+        # otherwise lead to duplicates in set
+        self.GammaSupportPoints = set(
+            [self._around(i) for i in np.linspace(0.9, 4.1, 30 + 3)])
 
-		# ***********************************************************************
-		# Loads sources from the given sourcepath
-		# Does something...
-		self._sources2 = np.load(kwargs['SourcePath'])
-		self._sources = np.lib.recfunctions.append_fields(
-			self._sources2, 'TimeNorm', data=np.ones_like(self._sources2['ra']))
-		del self._sources2
+        self.N_all = np.nan
+        self.n_select = np.nan
+        self._exp = np.nan
 
-		# AcceptancePath2 replaced some older variable?
-		# Interpolates (in 2D) a function for the Gamma and declination
-		try:
-			dec_bins = np.load(kwargs['AcceptanceWeightPath2'] + '_bins_dec.npy')
-			gamma_bins = np.load(kwargs['AcceptanceWeightPath2'] + '_bins_gamma.npy')
-			values = np.load(kwargs['AcceptanceWeightPath2'] + '_values.npy')
-			f = interpolate.interp2d(dec_bins, gamma_bins, values, kind='linear')
-			self.AcceptanceFitFunc = f
-			del f
-		except:
-			print('No Acceptance Files')
+        # Sets start and end date for data taking (typo irrelevant)
+        self.DataStart = kwargs['StartDataTakingMJD']
+        self.DataEnd = kwargs['EndDataTakingMJD']
 
-		# Sets Use Energy, Fit Gamma and Fixed Gamma
-		self.UseEnergy = kwargs['UseEnergy']
-		self.FitGamma = kwargs['FitGamma']
-		self.FixedGamma = kwargs['FixedGamma']
+        # Sets the livetime, and the total Season length
+        self.Livetime = kwargs['Livetime']
+        self.SeasonTimeSpan = self.DataEnd - self.DataStart
 
-		# Toggles using a box for sources to reduce runtime
-		self.UseBox = kwargs['UseBox']
+        # Loads "Experimental" and "Monte Carlo" data sets (in .npy format)
+        self.exp = np.load(kwargs['ExpPath'])
+        self.mc = np.load(kwargs['MCPath'])
 
-		# Sets Fit Weights (True/False for fitting the weights of each)
-		self.FitWeights = kwargs['FitWeights']
+        # ***********************************************************************
+        # Loads sources from the given source path
+        # Adds field to numpy array
+        self._sources2 = np.load(kwargs['SourcePath'])
+        self._sources = np.lib.recfunctions.append_fields(
+            self._sources2, 'TimeNorm', data=np.ones_like(self._sources2['ra']))
+        del self._sources2
 
-		# Sets UseTime and Time Model (Box/BoxPre/Decay)
-		self.UseTime = kwargs['UseTime']
-		self.TimeModel = kwargs['TimeModel']
+        # Interpolates (in 2D) a function for the Gamma and declination
+        try:
+            dec_bins = np.load(
+                kwargs['AcceptanceWeightPath'] + '_bins_dec.npy')
+            gamma_bins = np.load(
+                kwargs['AcceptanceWeightPath'] + '_bins_gamma.npy')
+            values = np.load(kwargs['AcceptanceWeightPath'] + '_values.npy')
+            f = interpolate.interp2d(
+                dec_bins, gamma_bins, values, kind='linear')
+            self.AcceptanceFitFunc = f
+            del f
+        except:
+            print('No Acceptance Files')
 
-		# If fitting for time
-		if self.UseTime:
-			# **************************************************************************************************************************
-			# Adds a 'Discovery Delay' (10 days) which is subtracted from discovery date
-			self.DiscDelay = 10.
-			self.sources['discoverydate_mjd'] = self.sources['discoverydate_mjd'] - self.DiscDelay
+        # Sets Use Energy, Fit Gamma and Fixed Gamma
+        self.UseEnergy = kwargs['UseEnergy']
+        self.FitGamma = kwargs['FitGamma']
+        self.FixedGamma = kwargs['FixedGamma']
 
-			if self.TimeModel == 'Box':
-				self.TimeBoxLenght = kwargs['TimeBoxLenght']
+        # Toggles using a box for sources to reduce runtime
+        self.UseBox = kwargs['UseBox']
 
-			if self.TimeModel == 'BoxPre':
-				self.TimeBoxLenght = kwargs['TimeBoxLenght']
+        # Sets Fit Weights (True/False for fitting the weights of each)
+        self.FitWeights = kwargs['FitWeights']
 
-			if self.TimeModel == 'Decay':
-				# ******************************************************************************************************************************
-				# What is 'tpp'? Also Length is spelled wrong. Is this used?
-				self.Model_tpp = kwargs['Model_tpp']
-				self.DecayModelLenght = kwargs['DecayModelLenght']
-				self.Model_Length = self.DecayModelLenght
+        # Sets UseTime and Time Model (Box/BoxPre/Decay)
+        self.UseTime = kwargs['UseTime']
+        self.TimeModel = kwargs['TimeModel']
 
-		# ****************************************************************************************************************************************
-		# Sets smear Injection and MissTiming
-		self.SmearInjection = kwargs['SmearInjection']
-		self.MissTiming = kwargs['MissTiming']
+        # If fitting for time
+        if self.UseTime:
+            # **************************************************************************************************************************
+            # Adds a 'Discovery Delay' (10 days), which is subtracted from
+            # discovery date
+            self.DiscDelay = 10.
+            self.sources['discoverydate_mjd'] = (
+                self.sources['discoverydate_mjd'] - self.DiscDelay)
 
-		# Creates empty dictionary, filled by Injector.FindAndApplyBandMask
-		self.InjectionBandMask = dict()
+            if self.TimeModel == 'Box':
+                self.TimeBoxLength = kwargs['TimeBoxLength']
 
-		# ***********************************************************************************************************************************************************
-		# If Injection Gamma is not given, sets it to 2. Then gives Injection Weights
-		if 'InjectionGamma' in kwargs.keys():
-			self.InjectionGamma = kwargs['InjectionGamma']
-		else:
-			self.InjectionGamma = 2.
-			self.WeightsInject = self.GetWeights(self.mc, self.InjectionGamma, )
-		print 'Injection Spectrum', self.InjectionGamma
+            if self.TimeModel == 'BoxPre':
+                self.TimeBoxLength = kwargs['TimeBoxLength']
 
-		# Creates a weight cache with default value nan
-		self.WeightCache = np.nan
+            if self.TimeModel == 'Decay':
+                # Sets Model Timescale (p-p), and decay mode length
+                self.Model_tpp = kwargs['Model_tpp']
+                self.DecayModelLength = kwargs['DecayModelLength']
+                self.Model_Length = self.DecayModelLength
 
-		# Makes sure unblinding is false
-		self.Unblind = False
+        # ****************************************************************************************************************************************
+        # Sets smear Injection and MissTiming
+        # Inject with wrong weight
+        # MT Inject with scaled time window (longer/shorter
+        self.SmearInjection = kwargs['SmearInjection']
+        self.MissTiming = kwargs['MissTiming']
 
-		# If not unblinded, times are shuffled. Otherwise gives a warning.
-		if self.Unblind is False:
-			np.random.shuffle(self.exp['timeMJD'])
-		else:
-			print('WARNING: Running in Unblinding Mode')
+        # Creates empty dictionary, filled by Injector.find_and_apply_band_mask
+        self.InjectionBandMask = dict()
 
-		# *******************************************************************************************************************************************************************
-		# Sets a default of Bootstrap=False, if not provided in init
-		self.BootStrap = False
-		try:
-			self.BootStrap = kwargs['BootStrap']
-		except:
-			pass
+        # If Injection Gamma is not given, sets it to 2.
+        # Then gives Injection Weights. Otherwise loads injection gamma.
+        if 'InjectionGamma' in kwargs.keys():
+            self.InjectionGamma = kwargs['InjectionGamma']
+        else:
+            self.InjectionGamma = 2.
+            self.WeightsInject = self.get_weights(self.mc, self.InjectionGamma)
+        print 'Injection Spectrum', self.InjectionGamma
+
+        # Creates a weight cache with default value nan
+        self.WeightCache = np.nan
+
+        # Makes sure unblinding is false
+        self.Unblind = False
+
+        # If not unblinded, times are shuffled. Otherwise gives a warning.
+        if self.Unblind is False:
+            np.random.shuffle(self.exp['timeMJD'])
+        else:
+            print('WARNING: Running in Unblinding Mode')
+
+        # ***********************************************************************
+        # Sets a default of Bootstrap=False, if not provided in init
+        # Statistical Method to evaluate uncertanties
+        # Test sensitivity
+        self.BootStrap = False
+        try:
+            self.BootStrap = kwargs['BootStrap']
+        except:
+            pass
 
 # ==============================================================================
 # Running Part
 # ==============================================================================
-	# Designed for backwards compatibility, so self.sources reurns self._sources
-	@property
-	def sources(self, ):
-		return self._sources
+    # Designed for backwards compatibility,
+    # so that self.sources returns self._sources
+    @property
+    def sources(self, ):
+        """Gives self._sources"""
+        return self._sources
 
-	def PrepareFakeDataSetAndEvalautePDF(self, k, ):
-		"""Prepares a scrambled dataset.
+    def prepare_fake_data_set_and_evaluate_pdf(self, k, ):
+        """Prepares a scrambled/randomised dataset.
 
-		:param k: Flux scale
-		:return: scrambled dataset
-		"""
-		# Initialises empty dictionaries and nan-values
-		self.w_cache = dict()
-		self.w_cache_Sig = dict()
-		self._ev = np.nan
-		self._ev_B = np.nan
-		self._ev_S = np.nan
-		self.EnergyWeightCache = np.nan
-		self.SoB = np.nan
+        :param k: Flux scale
+        :return: Scrambled dataset
+        """
+        # Initialises empty dictionaries and nan-values
+        self.w_cache = dict()
+        self.w_cache_Sig = dict()
+        self._ev = np.nan
+        self._ev_B = np.nan
+        self._ev_S = np.nan
+        self.EnergyWeightCache = np.nan
+        self.SoB = np.nan
 
-		# If UseBox, only selects events in Box,
-		# In either case, 'blinds' the experimental data
-		if self.UseBox is True:
-			self.w_cache_BG = dict()
-			self._ev = self.SelectEventsInBand(self.sources[0], self.exp)
-			self._ev = self.scramble_exp_data(self._ev)
-			self._ev = self.SelectEventsInBox(self.sources[0], self._ev, )
-		if self.UseBox is False:
-			self._ev = self.scramble_exp_data(self.exp)
+        # If UseBox, only selects events in Box,
+        # In either case, 'blinds' the experimental data
+        if self.UseBox is True:
+            self.w_cache_BG = dict()
+            self._ev = self.selects_events_in_band(self.sources[0], self.exp)
+            self._ev = self.scramble_exp_data(self._ev)
+            self._ev = self.select_events_in_box(self.sources[0], self._ev, )
+        if self.UseBox is False:
+            self._ev = self.scramble_exp_data(self.exp)
 
-		# If UseEnergy, then
-		if self.UseEnergy is True:
-			self.GenerateBGWeightDictForAllGamma(self._ev)
+        # Produces signal events
+        self.sig_events = self.generate_sig_events(self.sources, self.mc, k, )
 
-		self.sig_events = self.generate_sig_events(self.sources, self.mc, k, )
-		if self.UseEnergy is True:
-			self.GenerateSigWeightDictForAllGamma(self.sig_events)
+        # ***********************************************************************
+        # If UseEnergy, then generates energy weights?
+        if self.UseEnergy is True:
+            self.generate_sig_weight_dict_for_all_gamma(self.sig_events)
+            self.generate_bkg_weight_dict_for_all_gamma(self._ev)
 
-		self._ev = np.concatenate((self._ev, self.sig_events))
+        # Creates a combined dataset
+        self._ev = np.concatenate((self._ev, self.sig_events))
+        self.N_all = len(self.exp) + len(self.sig_events)
+        self.N = len(self._ev)
 
-		self.N_all = len(self.exp) + len(self.sig_events)
-		self.N = len(self._ev)
+        # ***********************************************************************
+        # What does this do?
+        self.evaluate_bkg()
+        self.evaluate_sig()
 
-		self.EvaluateB()
-		self.EvaluateS()
-		del(self._ev)
-		self.SoB = self.SoB / self._ev_B
-		del(self._ev_B)
+        del self._ev
+        self.SoB = self.SoB / self._ev_B
+        del self._ev_B
 
-		if self.UseEnergy is True:
-			if self.FitGamma is False:
-				gamma = self.FixedGamma
-				self.EnergyWeightCache = np.append(self.weightFAST(gamma, self.w_cache_BG),
-											self.weightFAST(gamma,self.w_cache_Sig))
+        # If UseEnergy but not FitGamma, set gamma to FixedGam
+        if self.UseEnergy is True:
+            if self.FitGamma is False:
+                gamma = self.FixedGamma
+                self.EnergyWeightCache = np.append(
+                    self.weight_fast(gamma, self.w_cache_BG),
+                    self.weight_fast(gamma, self.w_cache_Sig))
 
-	def InitEverythingForMultipleTrials(self, ):
-		"""Initialises
-		"""
-		#Produces scrambled experimental data set
-		self._ev = self.exp
-		self._ev = self.scramble_exp_data(self._ev)
-		#Finds a spatial PDF for the background, based on the experimental Sin Declination distribution		
-		bckg_spline_space = self.create_space_BG_pdf(self._ev)
-		self.bckg_spline_space = bckg_spline_space
-		
-		#Assigns a weight to each source, equal to 1/(r^2) for distance r
-		self.sources['weight_distance'] = self.sources['distance']**(-2.)
-		
-		#If accounting for energy, produces Energy PDFs
-		if self.UseEnergy == True:
-			print('Initialising Energy PDFs')
-			self.GenerateSplineDictForAllGamma(self.exp, self.mc)
-			self.GenerateBGWeightDictForAllGamma(self._ev)
-	
-		if self.UseTime == True:
-			self.ComputeSourceWeightsTime()
-			self.InitRandomGeneratorPDF()
-	
-	#*************************************************************************************************************************
-	def ProduceLLhFunction(self, ):
-		"""What does this do? Why does it return an array for UseBox?, but a number otherwise
-		"""
-		f = lambda x: - self.TestStatNewLLhFitWeights(x, )
-		
-		return f
+    def init_everything_for_multiple_trials(self, ):
+        """Initialises all attributes which need to be calculated once for
+        all trials. Scrambles/randomises the experimental data, creates a
+        spatial pdf for the background and assigns weight distances. Also
+        produces optional Energy PDFs and Time weights, if required.
+        """
+        # Produces scrambled experimental data set
+        self._ev = self.exp
+        self._ev = self.scramble_exp_data(self._ev)
 
-#=====================================================================================
-#End Running Part
-#=====================================================================================
+        # Finds a spatial PDF for the background, based on the experimental
+        # Sin Declination distribution
+        bckg_spline_space = self.create_space_bkg_pdf(self._ev)
+        self.bckg_spline_space = bckg_spline_space
 
-	def TestStatNewLLh(self, params, ):
-		N_all = self.N_all
-		N = self.N
-		SoB = self.SoB
-		
-		if self.UseEnergy==True:
-			n = params[:-1]
-			gamma = params[-1]
-			w = np.append(self.weightFAST(gamma, self.w_cache_BG),
-						 (self.weightFAST(gamma, self.w_cache_Sig)))
-		if self.UseEnergy==False:
-			n = params[:]
-			w = 1.
-		
-		n = n * self.SeasonWeight
-		y = w * np.sum(self.sources['weight'][:,None] * SoB, axis=0)
-		y = (y-1.) / N_all
-		alpha = n * y
-		funval = np.log1p(alpha)
-		funval = funval.sum() + (N_all - N) * np.log1p(-n / N_all)
-		return 2.* funval
-	
-	
-	def TestStatNewLLhFast(self, params, ):
-		N_all = self.N_all
-		N = self.N
-		SoB = self.SoB
-		
-		if self.UseEnergy==True:
-			n = params[:-1]
-			gamma = params[-1]
-			w = np.append(self.weightFAST(gamma, self.w_cache_BG),
-						 (self.weightFAST(gamma, self.w_cache_Sig)))
-		if self.UseEnergy==False:
-			n = params[:]
-			w = 1.
-		
-		n = n * self.SeasonWeight
-		b = self.sources['weight'][:,None]
-		y = np.sum(numexpr.evaluate('(b * SoB)'), axis=0)
-		funval = numexpr.evaluate('log1p(n * (((w * y)-1.) / N_all))')
-		funval = funval.sum() + (N_all - N) * np.log1p(-n / N_all)
-		return 2.* funval
+        # Assigns a weight to each source, equal to 1/(r^2) for distance r
+        self.sources['weight_distance'] = self.sources['distance']**(-2.)
 
-	
-	def TestStatNewLLhFitWeights(self, params, ):
-		N_all = self.N_all
-		N = self.N
-		SoB = self.SoB
-		
-		if self.UseEnergy==True:
-			n = params[:-1]
-			gamma = params[-1]
-			w = np.append(self.weightFAST(gamma, self.w_cache_BG),
-						 (self.weightFAST(gamma, self.w_cache_Sig)))
-		if self.UseEnergy==False:
-			n = params[:]
-			w = 1.
-		
-		n = n * self.SeasonWeight
-		b = self.sources['weight'][:,None]
+        # If accounting for energy, produces Energy PDFs
+        if self.UseEnergy is True:
+            print('Initialising Energy PDFs')
+            self.generate_spline_dict_for_all_gamma(self.exp, self.mc)
+            self.generate_bkg_weight_dict_for_all_gamma(self._ev)
 
-		if self.FitWeights==False:
-			y = np.sum(numexpr.evaluate('(b * SoB)'), axis=0)
-			a = numexpr.evaluate('n * (w*y-1.)')
-			del(w)
+        # If using time, calculates Time weights for the source
+        if self.UseTime is True:
+            self.compute_source_weights_time()
+            self.init_random_generator_pdf()
 
-		if self.FitWeights==True:
-			y = numexpr.evaluate('SoB')
-			c = np.matrix(numexpr.evaluate('w*SoB-1.'))
-			del(w)
-			a = np.squeeze(np.asarray(n*c))
-			del(c)
-		funval = numexpr.evaluate('log1p(a / N_all)')
+    def ProduceLLhFunction(self, ):
+        """ Creates a function to give f(x) = -1 * Test Statistic (x),
+        and returns it.
+        
+        :return: function
+        """
+        f = lambda x: - self.test_stat_new_llh_fit_weights(x, )
 
-		#Make sure to delete it from memory
-		del(SoB)
-		del(y)
-		del(a)
-		#***************************************************************************************************
-		#This is what stops Usebox from Working
-		if self.UseBox==True:
-			funval = funval.sum() + (N_all - N) * np.log1p(-n / N_all)
-		else:
-			funval = funval.sum()
-		return 2.* funval
+        return f
+
+# ==============================================================================
+# End Running Part
+# ==============================================================================
+
+    def test_stat_new_llh_fit_weights(self, params, ):
+        """Calculates the test statistic, given the parameters. Uses numexpr
+        for faster calculations.
+
+        :param params: Parameters from minimisation
+        :return: Test Statistic
+        """
+        N_all = self.N_all
+        N = self.N
+        SoB = self.SoB
+
+        # If using Energy, finds gamma and the remaining parameters
+        # Calculates the Signal/background ratio for
+        if self.UseEnergy is True:
+            n = params[:-1]
+            gamma = params[-1]
+            w = np.append(self.weight_fast(gamma, self.w_cache_BG),
+                          (self.weight_fast(gamma, self.w_cache_Sig)))
+
+        if self.UseEnergy is False:
+            n = params[:]
+            w = 1.
+
+        n *= self.SeasonWeight
+        b = self.sources['weight'][:, None]
+
+        # If not fitting weights, use array. Otherwise, use matrix.
+        if self.FitWeights is False:
+            y = np.sum(numexpr.evaluate('(b * SoB)'), axis=0)
+            a = numexpr.evaluate('n * (w*y-1.)')
+            del w
+        if self.FitWeights is True:
+            y = numexpr.evaluate('SoB')
+            c = np.matrix(numexpr.evaluate('w*SoB-1.'))
+            del w
+            a = np.squeeze(np.asarray(n * c))
+            del c
+
+        llh_value = numexpr.evaluate('log1p(a / N_all)')
+
+        # Make sure to delete variables from memory
+        del SoB
+        del y
+        del a
+
+        if self.UseBox is True:
+            llh_value = llh_value.sum() + (N_all - N) * np.log1p(-n / N_all)
+        else:
+            llh_value = llh_value.sum()
+
+        # Definition of test statistic
+        return 2. * llh_value

@@ -3,11 +3,8 @@ import copy
 import Sphere
 import RandomTools
 from scipy import stats
-
-import healpy as hp
-#from astropy import units as u
-
 from scipy.stats import norm
+import healpy as hp
 
 class Injector():
 
@@ -27,23 +24,22 @@ class Injector():
 
         # Random Variates drawn from a normal distribution, with a width
         # scale equal to 'SmearInjection'.
-        new_flux = inject_sources['flux'] * np.exp(
-            stats.norm.rvs(loc=0., scale=self.SmearInjection, size=len(sources)))
+        new_flux = inject_sources['flux'] * np.exp(stats.norm.rvs(
+            loc=0., scale=self.SmearInjection, size=len(sources)))
         normalisation = np.sum(sources['flux']) / np.sum(new_flux)
-        inject_sources['flux'] = new_flux * normalisation
-        inject_sources['flux'] = inject_sources['flux'] * k
+        inject_sources['flux'] = new_flux * normalisation * k
 
         sig_events = self.extract_events_from_mc(inject_sources, mc,)
         return sig_events
 
-    def FindAndApplyBandMask(self, source, mc, dec_bandwidth):
+    def find_and_apply_band_mask(self, source, mc, dec_bandwidth):
         """For a given source, creates a mask to include only Monte Carlo
         events which lie in a declination band, of width 10 degrees, centered
         on the source.
 
         :param source: Single source
         :param mc: Monte Carlo data (signal)
-        :param dec_bandwidth: Width of declination baand (in radians)
+        :param dec_bandwidth: Width of declination band (in radians)
         :return: Returns Monte Carlo events in the band,
         the solid angle coverage, and the mask for the band.
         """
@@ -53,8 +49,7 @@ class Injector():
         # Gives the solid angle coverage of the sky for the band
         omega = 2. * np.pi * (np.sin(max_dec) - np.sin(min_dec))
 
-        # **********************************************************************************
-        # What is _Return.....
+        # Check for season weighting as a function of declination
         if self._ReturnInjectorNExp:
             self.InjectionBandMask = dict()
 
@@ -86,14 +81,15 @@ class Injector():
         # Sets detector livetime in seconds
         livetime = self.Livetime * (60. * 60. * 24.)
         #**************************************************************************
-        # Sometimes 10 degrees, sometimes 5? (PDF SelectEventsInBand)
+        # Sometimes 10 degrees, sometimes 5? (PDF selects_events_in_band)
+        # Conservative
         dec_bandwidth = np.deg2rad(5.)
         TotMuN = 0.
 
         # Loops over sources to add in expected number of neutrinos
         for source in sources:
             # Only includes events lying in a +/- 5 degree declination band
-            SourceMC, omega, band_mask = self.FindAndApplyBandMask(
+            SourceMC, omega, band_mask = self.find_and_apply_band_mask(
                 source, mc, dec_bandwidth)
 
             # If using time, calculates the Fluence using the time model
@@ -121,7 +117,7 @@ class Injector():
             # **************************************************************************
             # Add in bracket?
             # Recalculates the one weights to account for the band mask?
-            SourceMC['ow'] = self.WeightsInject[band_mask] / omega * source[
+            SourceMC['ow'] = (self.WeightsInject[band_mask] / omega) * source[
                 'weight_distance'] * fluence
 
             # Expectation number of Neutrinos, equal to sum of one weights
@@ -164,12 +160,12 @@ class Injector():
             if self.UseTime is True:
                 sam_ev['timeMJD'] = (self.GenerateNRandomNumbers(n_signal) +
                                      source['discoverydate_mjd'])
-                sam_ev = self.CheckTimeBorders(sam_ev, )
+                sam_ev = self.check_time_borders(sam_ev, )
 
             sig_events = np.concatenate((sig_events, sam_ev))
         return sig_events
 
-    def CheckTimeBorders(self, sam_ev, ):
+    def check_time_borders(self, sam_ev, ):
         """Checks to ensure each event lies within the season.
         Removes those events which lie outside the window.
 
@@ -262,7 +258,7 @@ class Injector():
         # Rotate **all** these vectors towards ra3, dec3 (source)
         zen, phi = hp.rotator.rotateDirection(np.dot(
             hp.rotator.get_rotation_matrix((-phi3, 0, 0))[0],
-            hp.rotator.get_rotation_matrix((0, zen3, 0.))[0]), x[:,0], x[:,1])
+            hp.rotator.get_rotation_matrix((0, zen3, 0.))[0]), x[:, 0], x[:, 1])
 
         dec = np.pi/2. - zen
         ra = phi + np.pi
