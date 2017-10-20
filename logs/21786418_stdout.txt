@@ -1,0 +1,106 @@
+/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/data_configs/fast.ini
+14.2857142857
+0 Memory usage: 0.10179296875 (Gb)
+Memory usage max: 0.104244 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__14.2857142857_2453998224.pkl  created
+
+---------------------
+0.0
+0 Memory usage: 0.220125 (Gb)
+Memory usage max: 0.225408 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__0.0_2453998225.pkl  created
+
+---------------------
+71.4285714286
+0 Memory usage: 0.33445703125 (Gb)
+Memory usage max: 0.342488 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__71.4285714286_2453998226.pkl  created
+
+---------------------
+7.14285714286
+0 Memory usage: 0.44439453125 (Gb)
+Memory usage max: 0.455064 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__7.14285714286_2453998227.pkl  created
+
+---------------------
+78.5714285714
+0 Memory usage: 0.55723828125 (Gb)
+Memory usage max: 0.570616 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__78.5714285714_2453998228.pkl  created
+
+---------------------
+50.0
+0 Memory usage: 0.66491796875 (Gb)
+Memory usage max: 0.68088 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__50.0_2453998229.pkl  created
+
+---------------------
+28.5714285714
+0 Memory usage: 0.77115625 (Gb)
+Memory usage max: 0.789668 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__28.5714285714_2453998230.pkl  created
+
+---------------------
+92.8571428571
+0 Memory usage: 0.87909375 (Gb)
+Memory usage max: 0.900196 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__92.8571428571_2453998231.pkl  created
+
+---------------------
+35.7142857143
+0 Memory usage: 0.98951171875 (Gb)
+Memory usage max: 1.013392 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__35.7142857143_2453998232.pkl  created
+
+---------------------
+85.7142857143
+0 Memory usage: 1.09746484375 (Gb)
+Memory usage max: 1.124028 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__85.7142857143_2453998233.pkl  created
+
+---------------------
+42.8571428571
+0 Memory usage: 1.19662890625 (Gb)
+Memory usage max: 1.225352 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__42.8571428571_2453998234.pkl  created
+
+---------------------
+21.4285714286
+0 Memory usage: 1.295875 (Gb)
+Memory usage max: 1.32698 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__21.4285714286_2453998235.pkl  created
+
+---------------------
+57.1428571429
+0 Memory usage: 1.39459375 (Gb)
+Memory usage max: 1.428072 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__57.1428571429_2453998236.pkl  created
+
+---------------------
+64.2857142857
+0 Memory usage: 1.4947578125 (Gb)
+Memory usage max: 1.530656 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__64.2857142857_2453998237.pkl  created
+
+---------------------
+100.0
+0 Memory usage: 1.58126953125 (Gb)
+Memory usage max: 1.619224 (Gb)
+Injection Spectrum 2.0
+14.3 %28.6 %42.9 %57.1 %71.4 %85.7 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_test_alignment_scaling_offset_-30.0__100.0_2453998238.pkl  created
+
+---------------------

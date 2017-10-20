@@ -8,6 +8,7 @@ numexpr.set_num_threads(1)
 
 import scipy.interpolate
 
+import time_models as tm
 
 class PDF():
 
@@ -420,12 +421,14 @@ class PDF():
         NData = len(data)
         self.SoB = np.zeros([NSources, NData])
         for i in range(len(sources)):
-            # Stage 1 of calculaing SoB, processed further later (saves memory)
+            # Stage 1 of calculating SoB, processed further later (saves memory)
             self.SoB[i] = self.S_source(sources[i], data, )
 
 # ==============================================================================
 # Time PDFs
 # ==============================================================================
+
+
 
     def compute_source_weights_time(self, ):
         """Loops over sources. For any of the given Time Models, calculates
@@ -436,48 +439,40 @@ class PDF():
         for source in self.sources:
             # Calculates for a box starting at discovery and lasting for
             # a time period TimeBoxLength
-            if self.TimeModel == 'Box':
-                t_start = min(
-                    max(self.DataStart, source['discoverydate_mjd']),
-                    self.DataEnd)
+            season_norm, total_norm = tm.return_norms(
+                self.ReconTimeModel, self.DataStart, self.DataEnd,
+                source["discoverydate_mjd"],
+                self.ReconTimeParameters)
 
-                t_end = min(
-                    max(self.DataStart,
-                        source['discoverydate_mjd'] + self.TimeBoxLength),
-                    self.DataEnd)
+            source['weight_time'] = max(season_norm / self.SeasonTimeSpan, 0.)
+            source['TimeNorm'] = max(season_norm / total_norm, 0.)
 
-                time_length_in_seasons = t_end - t_start
-                tot_norm = self.TimeBoxLength
-                source['weight_time'] = max(
-                    time_length_in_seasons / self.SeasonTimeSpan, 0.)
-                source['TimeNorm'] = max(time_length_in_seasons / tot_norm, 0.)
-
-            # Calculates for a box beginning TimeBoxLength before discovery
-            # and continuing until discovery. 
-            if self.TimeModel == 'BoxPre':
-                t_start = min(
-                    max(self.DataStart,
-                        source['discoverydate_mjd'] - self.TimeBoxLength),
-                    self.DataEnd)
-
-                t_end = min(max(self.DataStart, source['discoverydate_mjd']),
-                    self.DataEnd)
-
-                time_length_in_seasons = t_end - t_start
-                tot_norm = self.TimeBoxLength
-                source['weight_time'] = max(
-                    time_length_in_seasons / self.SeasonTimeSpan, 0.)
-                source['TimeNorm'] = max(time_length_in_seasons / tot_norm, 0.)
+            # # Calculates for a box beginning TimeBoxLength before discovery
+            # # and continuing until discovery.
+            # if self.ReconTimeModel == 'BoxPre':
+            #     t_start = min(
+            #         max(self.DataStart,
+            #             source['discoverydate_mjd'] - self.ReconTimeLength),
+            #         self.DataEnd)
+            #
+            #     t_end = min(max(self.DataStart, source['discoverydate_mjd']),
+            #         self.DataEnd)
+            #
+            #     time_length_in_seasons = t_end - t_start
+            #     tot_norm = self.ReconTimeLength
+            #     source['weight_time'] = max(
+            #         time_length_in_seasons / self.SeasonTimeSpan, 0.)
+            #     source['TimeNorm'] = max(time_length_in_seasons / tot_norm, 0.)
 
             # Calculates for for an arbitrary exponential decay model
-            if self.TimeModel == 'Decay':
-                t_pp = self.Model_tpp
+            if self.ReconTimeModel == 'Decay':
+                t_pp = self.ReconModelParameters["t_pp"]
                 t_start = max(
                     0., self.DataStart - (source['discoverydate_mjd']))
-                t_end = min(self.DecayModelLength,
+                t_end = min(self.ReconTimeLength,
                     max((self.DataEnd - source['discoverydate_mjd']), 0.))
                 tot_norm = t_pp * (
-                    np.log(self.DecayModelLength + t_pp) - np.log(0. + t_pp))
+                    np.log(self.ReconTimeLength + t_pp) - np.log(0. + t_pp))
                 SeasonNorm = t_pp * (
                     np.log(t_end + t_pp) - np.log(t_start + t_pp))
                 source['TimeNorm'] = SeasonNorm / tot_norm
@@ -506,6 +501,6 @@ class PDF():
             norm = 1.
         mask = np.logical_and(t > self.DataStart, t < self.DataEnd)
         t = t[mask] - source['discoverydate_mjd']
-        r[mask] = self.NuLightCurveFunc(t) / norm
+        r[mask] = self.ReconNuLightCurveFunc(t) / norm
         return r
 

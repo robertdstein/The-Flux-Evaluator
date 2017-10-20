@@ -99,66 +99,72 @@ class Sensitivity():
 
         :return:
         """
-        data = self.all_data['test_stat_all_unsorted'][0]
-        mask = data > 0.
-        fraction = np.sum(mask) / float(len(mask))
-        print('Fraction of underfluctuations is ', 1. - fraction)
-        fit_res = scp.stats.chi2.fit(data[mask], df=2., floc=0., fscale=1.)
+        if len(self.all_data['test_stat_all_unsorted']) > 1:
+            data = self.all_data['test_stat_all_unsorted'][0]
+            mask = data > 0.
+            fraction = np.sum(mask) / float(len(mask))
+            print('Fraction of underfluctuations is ', 1. - fraction)
+            fit_res = scp.stats.chi2.fit(data[mask], df=2., floc=0., fscale=1.)
 
-        # if False:
-        #     x = np.linspace(0., 50., 1.e5)
-        #     y = scp.stats.chi2.pdf(x, fit_res[0]) * fraction
-        #     plt.figure()
-        #     plt.hist(data, bins=50, lw=2, histtype='step',
-        #         normed=True, color='black', label='BG Test Stat')
-        #     plt.plot(x, y, lw=2, color='red',
-        #         label=r'$\chi^2$ fit, df={0:6.2f}'.format(fit_res[0]))
-        #     plt.semilogy()
-        #     plt.xlim(0., 1.e1)
-        #     plt.ylim(1.e-3, 1.e0)
-        #     plt.grid()
-        #     plt.xlabel(r"$\lambda$")
-        #     plt.legend(loc='best', fancybox=True, framealpha=1.)
-        #     plt.savefig('plots/test_stats/MyCodeTestStatBG.pdf')
-        #     plt.show()
+            # if False:
+            #     x = np.linspace(0., 50., 1.e5)
+            #     y = scp.stats.chi2.pdf(x, fit_res[0]) * fraction
+            #     plt.figure()
+            #     plt.hist(data, bins=50, lw=2, histtype='step',
+            #         normed=True, color='black', label='BG Test Stat')
+            #     plt.plot(x, y, lw=2, color='red',
+            #         label=r'$\chi^2$ fit, df={0:6.2f}'.format(fit_res[0]))
+            #     plt.semilogy()
+            #     plt.xlim(0., 1.e1)
+            #     plt.ylim(1.e-3, 1.e0)
+            #     plt.grid()
+            #     plt.xlabel(r"$\lambda$")
+            #     plt.legend(loc='best', fancybox=True, framealpha=1.)
+            #     plt.savefig('plots/test_stats/MyCodeTestStatBG.pdf')
+            #     plt.show()
 
-        if self.alpha > 0.1:
-            self.TestStatThreshold = np.percentile(
-                self.all_data['test_stat_sorted_all'][0.0],
-                (1. - self.alpha) * 1.e2)
+            if self.alpha > 0.1:
+                self.TestStatThreshold = np.percentile(
+                    self.all_data['test_stat_sorted_all'][0.0],
+                    (1. - self.alpha) * 1.e2)
+            else:
+                f = lambda x: scp.stats.chi2.sf(x, fit_res[0]) * \
+                    fraction - self.alpha
+                AlphaSigma = bisect(f, 0., 50.)
+                self.TestStatThreshold = AlphaSigma
+                if True:
+                    from matplotlib import cm
+                    col = [cm.gist_rainbow(x) for x in np.linspace(0, 1, 20)]
+                    x = np.linspace(0., 50., 1.e5)
+                    y = scp.stats.chi2.sf(x, fit_res[0]) * fraction
+                    y[0] += (1. - fraction)
+                    fig, ax1 = plt.subplots()
+                    plt.gcf().subplots_adjust(bottom=0.15, top=0.8, left=0.15)
+                    plt.axhline(
+                        self.alpha, color=col[1], lw=1, label=r'Significance')
+                    plt.axvline(AlphaSigma, lw=1, color=col[1])
+                    plt.hist(
+                        data, bins=100, lw=2, histtype='step', normed=True,
+                        color='black', label='BG Test Stat', cumulative=-1)
+                    plt.plot(x, y, lw=2, color=col[15],
+                             label=r'$\chi^2$ fit, df={0:6.2f}'.format(fit_res[0]))
+                    plt.semilogy()
+                    plt.xlim(0., 3.e1)
+                    plt.ylim(1.e-7, 1.e0)
+                    plt.xlabel(r"$\lambda$")
+                    plt.ylabel(r"$\int_{\lambda}^\infty P(\lambda^\prime)" +
+                               "\mathrm{d}\lambda^\prime$")
+                    plt.legend(loc='best', fancybox=True, framealpha=1.)
+                    plt.savefig('plots/test_stats/MyCodeTestStatBG_withSens.pdf')
+                    plt.show()
+
+            if self.UpperLimit:
+                self.TestStatThreshold = input("Measured lambda? ")
+
+            return True
+
         else:
-            f = lambda x: scp.stats.chi2.sf(x, fit_res[0]) * \
-                fraction - self.alpha
-            AlphaSigma = bisect(f, 0., 50.)
-            self.TestStatThreshold = AlphaSigma
-            if True:
-                from matplotlib import cm
-                col = [cm.gist_rainbow(x) for x in np.linspace(0, 1, 20)]
-                x = np.linspace(0., 50., 1.e5)
-                y = scp.stats.chi2.sf(x, fit_res[0]) * fraction
-                y[0] += (1. - fraction)
-                fig, ax1 = plt.subplots()
-                plt.gcf().subplots_adjust(bottom=0.15, top=0.8, left=0.15)
-                plt.axhline(
-                    self.alpha, color=col[1], lw=1, label=r'Significance')
-                plt.axvline(AlphaSigma, lw=1, color=col[1])
-                plt.hist(
-                    data, bins=100, lw=2, histtype='step', normed=True,
-                    color='black', label='BG Test Stat', cumulative=-1)
-                plt.plot(x, y, lw=2, color=col[15],
-                         label=r'$\chi^2$ fit, df={0:6.2f}'.format(fit_res[0]))
-                plt.semilogy()
-                plt.xlim(0., 3.e1)
-                plt.ylim(1.e-7, 1.e0)
-                plt.xlabel(r"$\lambda$")
-                plt.ylabel(r"$\int_{\lambda}^\infty P(\lambda^\prime)" +
-                           "\mathrm{d}\lambda^\prime$")
-                plt.legend(loc='best', fancybox=True, framealpha=1.)
-                plt.savefig('plots/test_stats/MyCodeTestStatBG_withSens.pdf')
-                plt.show()
-
-        if self.UpperLimit:
-            self.TestStatThreshold = input("Measured lambda? ")
+            return False
 
     def FindDetectionChance(self, ):
         self.all_data['DetChanceFunc'] = {}
@@ -180,14 +186,15 @@ class Sensitivity():
         return value
 
     def InterpolateDetectionChance(self, ):
-        x = np.sort(np.array(self.all_data['test_stat_sorted_all'].keys()))[:]
+        x = np.sort(np.array(self.all_data['test_stat_sorted_all'].keys()))
         y = np.array([self.all_data['DetChance'][k] for k in x])
         weights = np.array([self.all_data['NTrials'][k] for k in x])
         self.DetChanceInterpolation = interp1d(x, y, kind='linear')
-        PolyParams = np.polyfit(x, y, 3, w=weights)
+        PolyParams = np.polyfit(x[1:], y[1:], 3, w=weights[1:])
         self.DetChancePolyFit = lambda x: np.polyval(PolyParams, x)
         self.DetChanceMyFit = scp.optimize.curve_fit(
-            self.SensInterpoaltionFunction, x, y, sigma=1. / weights)[0]
+            self.SensInterpoaltionFunction, x[1:], y[1:], sigma=1. / weights[1:]
+        )[0]
 
     def find_sensitivity(self, ):
         flux_scale_min = np.min(self.all_data['test_stat_sorted_all'].keys()[:])
@@ -237,19 +244,28 @@ class Sensitivity():
             plt.ylabel(r'chance for $\lambda$ over threshold')
             plt.savefig(str(self.plot_path) + 'sens.pdf')
             plt.show()
+
+        fits = dict()
         try:
-            print('Polynom: ', brentq(f, flux_scale_min, flux_scale_max))
+            fits["polynom"] = brentq(f, flux_scale_min, flux_scale_max)
+            print('Polynom: ', fits["polynom"])
         except:
             print ('Polynom: Failed')
+            fits["polynom"] = 0.0
         try:
-            print('Interpolation: ', brentq(f2, flux_scale_min, flux_scale_max))
+            fits["interpolation"] = brentq(f2, flux_scale_min, flux_scale_max)
+            print('Interpolation: ', fits["interpolation"])
         except:
             print ('Interpolation: Failed')
+            fits["interpolation"] = 0.0
         try:
-            print('My Interpolation: ', brentq(f3, flux_scale_min, flux_scale_max))
+            fits["mine"] = brentq(f3, flux_scale_min, flux_scale_max)
+            print('My Interpolation: ', fits["mine"])
         except:
             print ('My Interpolation: Failed')
+            fits["mine"] = 0.0
         print ''
+        return fits
 
     def ComputeP_Value(self, ):
         MeasuredLambda = input("Measured lambda? ")
@@ -264,13 +280,14 @@ class Sensitivity():
         self.find_test_stat_threshold()
         self.FindDetectionChance()
         self.InterpolateDetectionChance()
-        self.find_sensitivity()
+        fits = self.find_sensitivity()
+        return fits
 
     def pValueFunction(self, MeasuredLambda):
         self.generate_distributions()
         x = np.sort(self.test_stat_results[0])
-        CorrectPValue = 100. - stats.percentileofscore(x,
-            MeasuredLambda, kind='strict')
+        correct_p_value = 100. - stats.percentileofscore(
+            x, MeasuredLambda, kind='strict')
         #mask = x > 0.
         #fraction = np.sum(mask) / float(len(mask))
         #fit_res = scp.stats.chi2.fit(x[mask], df=2., floc=0., fscale=1.)
@@ -281,4 +298,4 @@ class Sensitivity():
         #else:
             #FitPValue = scp.stats.chi2.pdf(MeasuredLambda, fit_res[0]) * \
                 #fraction * 100.
-        return CorrectPValue
+        return correct_p_value

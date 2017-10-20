@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py", line 95, in <module>
+    k=i, n_trials=n_trials, path=path, seed=seed)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 56, in generate_test_statistics
+    test_stats = self.generate_trials(n_trials, k=k, )
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 202, in generate_trials
+    test_stat_res = self.minimise_llh(f_final)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 237, in minimise_llh
+    f_final, seed, bounds=bounds, approx_grad=True)
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/scipy/optimize/lbfgsb.py", line 187, in fmin_l_bfgs_b
+    **opts)
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/scipy/optimize/lbfgsb.py", line 315, in _minimize_lbfgsb
+    f, g = func_and_grad(x)
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/scipy/optimize/lbfgsb.py", line 261, in func_and_grad
+    f = fun(x, *args)
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/scipy/optimize/optimize.py", line 282, in function_wrapper
+    return function(*(wrapper_args + args))
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 199, in f_final
+    value += f(x)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/LLh.py", line 289, in <lambda>
+    f = lambda x: - self.test_stat_new_llh_fit_weights(x, )
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/LLh.py", line 320, in test_stat_new_llh_fit_weights
+    n *= self.SeasonWeight
+ValueError: operands could not be broadcast together with shapes (10,) (8,) (10,) 

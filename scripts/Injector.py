@@ -64,7 +64,7 @@ class Injector():
         return (mc[band_mask]), omega, band_mask
 
     def extract_events_from_mc(self, sources, mc, ):
-        """Randomises a a set of Monte Carlo data for a given set of sources.
+        """Randomises a set of Monte Carlo data for a given set of sources.
         For each source, selects only those events lying in a declination
         band centered on the source.
 
@@ -97,14 +97,18 @@ class Injector():
             if self.UseTime is True:
                 EfficencyFactor = livetime / (
                     (self.DataEnd-self.DataStart) * 24. * 60. * 60.)
-                if self.TimeModel == 'Box':
-                    TotalTime = self.TimeBoxLenght
-                if self.TimeModel == 'BoxPre':
-                    TotalTime = self.TimeBoxLenght
-                if self.TimeModel == 'Decay':
-                    TotalTime = self.Model_tpp * (
+                if self.SimTimeModel == 'Box':
+                    TotalTime = self.SimTimeLength
+                if self.SimTimeModel == 'BoxPre':
+                    TotalTime = self.SimTimeLength
+
+                # *************************************************************
+
+                if self.SimTimeModel == 'Decay':
+                    TotalTime = self.SimTimeLength * (
                         np.log(self.Model_Length + self.Model_tpp)
                         - np.log(0. + self.Model_tpp))
+
                 TotalTimeDays = TotalTime
                 TotalTime *= (60. * 60. * 24.)
                 fluence = EfficencyFactor * TotalTime * source['flux']
@@ -158,8 +162,9 @@ class Injector():
 
             # Generates random numbers according to Time profile
             if self.UseTime is True:
-                sam_ev['timeMJD'] = (self.GenerateNRandomNumbers(n_signal) +
-                                     source['discoverydate_mjd'])
+                sam_ev['timeMJD'] = (self.generate_n_random_numbers(n_signal) +
+                                     source['discoverydate_mjd'] +
+                                     self.SimTimeParameters["t0"])
                 sam_ev = self.check_time_borders(sam_ev, )
 
             sig_events = np.concatenate((sig_events, sam_ev))

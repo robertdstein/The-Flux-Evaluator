@@ -53,6 +53,12 @@ class GenerationControl(object, ):
         # the given flux scale, and saves the pickle results file
         path += "_" + self.settings["ConfigName"]
         path += '__' + str(k) + '_' + str(self.seed) + '.pkl'
+
+        # Checks the Pickle Directory exists, and if not, creates it
+        results_dir = os.path.dirname(path)
+        if not os.path.isdir(results_dir):
+            os.mkdir(results_dir)
+
         test_stats = self.generate_trials(n_trials, k=k, )
         self.write_result_to_file(path, k, test_stats)
 
@@ -231,8 +237,8 @@ class GenerationControl(object, ):
 
                 if self.settings['FitGamma'] is True:
                     seed = np.append(np.ones(n_sources), 2.)
-                    bounds = [(0., 1000.) for i in range(n_sources)] + [(1.,
-                                                                         4.)]
+                    bounds = [(0., 1000.) for i in range(n_sources)] + \
+                             [(1., 4.)]
                     res = scp.optimize.fmin_l_bfgs_b(
                         f_final, seed, bounds=bounds, approx_grad=True)
 
@@ -268,6 +274,7 @@ class GenerationControl(object, ):
 
         # Returns a value for LLH at minimum
         test_stat_res = -res[1]
+
         return test_stat_res
 
     def write_result_to_file(self, path, k, test_stats):
@@ -351,9 +358,16 @@ class GenerationControl(object, ):
         data_path += "_" + config_name
         output_path += "_" + config_name + ".pkl"
 
+        # Checks if results directory exists
+        output_dir = os.path.dirname(output_path)
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+
         # Creates an empty Pickle Path for results
         if os.path.isfile(output_path):
             os.remove(output_path)
+
+
 
         # Returns a list of all files matching the path given
         file_list = glob.glob(data_path + '__*.pkl')

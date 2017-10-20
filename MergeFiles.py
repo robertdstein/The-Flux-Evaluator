@@ -32,27 +32,21 @@ def run(config_name,
     :param root: path to directory containing results/, merged/, and plot/
     directories.
     """
-    conf = ConfigParser.ConfigParser()
-    conf.read("config.ini")
 
-    if config_name not in conf.sections():
-        print "Searching for config section", config_name, "in", conf.sections()
-        raise Exception("Config file not found.")
+    generation_control_instance = GenerationControl()
 
-    else:
-        generation_control_instance = GenerationControl()
+    path = "/afs/ifh.de/user/s/steinrob/scratch/stacking_dump/results"
+    out_put_path = root + "merged/results"
+    plot_path = root + "plots/"
 
-        path = root + "results/results"
-        out_put_path = root + "merged/results"
-        plot_path = root + "plots/"
+    generation_control_instance.merge_test_result_pickles(
+        data_path=path, output_path=out_put_path, config_name=config_name)
 
-        generation_control_instance.merge_test_result_pickles(
-            data_path=path, output_path=out_put_path, config_name=config_name)
+    sens = Sensitivity(path=out_put_path, plot_path=plot_path,
+                       plotting=True, config=config_name)
 
-        sens = Sensitivity(path=out_put_path, plot_path=plot_path,
-                           plotting=True, config=config_name)
-
-        sens.CreateSensitivyAllInOne()
+    fits = sens.CreateSensitivyAllInOne()
+    return fits
 
 # If script is run from command line, automatically uses run()
 # If imported into another script, run() must be explicitly called
@@ -61,4 +55,13 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--config", default="Fast_with_fit")
 
     cfg = parser.parse_args()
-    run(cfg.config)
+
+    conf = ConfigParser.ConfigParser()
+    conf.read("config.ini")
+
+    if cfg.config not in conf.sections():
+        print "Searching for config section", cfg.config, "in", conf.sections()
+        raise Exception("Config file not found.")
+
+    else:
+        run(cfg.config)

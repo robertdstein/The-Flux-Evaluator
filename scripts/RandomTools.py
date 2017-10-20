@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+import time_models as tm
 
 
 # **********************************************************************************
@@ -30,33 +31,38 @@ class RandomTools(object, ):
         :return: Inverse interpolation of integrated light curve
         """
         t_min = 0.
-        if self.TimeModel == 'Box':
-            self.NuLightCurveFunc = lambda x: self.BoxFunc(x,
-                                                           self.TimeBoxLength)
-            t_max = self.TimeBoxLength
-            norm = (t_max - t_min)
-            IntegralNuLightCurveFunc = lambda x: x / norm
-        if self.TimeModel == 'BoxPre':
-            self.NuLightCurveFunc = lambda x: self.BoxFunc(x,
-                                                           self.TimeBoxLength)
-            t_max = self.TimeBoxLength
-            norm = (t_max - t_min)
-            IntegralNuLightCurveFunc = lambda x: x / norm
-        if self.TimeModel == 'Decay':
-            self.NuLightCurveFunc = lambda x: self.AnalyticTimePDF(
-                x, self.Model_tpp, self.DecayModelLength)
-            t_max = self.DecayModelLength
-            norm = self.Model_tpp * (np.log(t_max + self.Model_tpp) -
-                                     np.log(t_min + self.Model_tpp))
-            IntegralNuLightCurveFunc = lambda x: self.Model_tpp * (
-                np.log(x + self.Model_tpp) - np.log(self.Model_tpp)) / norm
+
+        self.NuLightCurveFunc = lambda x: tm.return_light_curve(
+            self.SimTimeModel, x,
+            self.SimTimeParameters)
+        t_max = self.SimTimeParameters["length"]
+        norm = (t_max - t_min)
+        IntegralNuLightCurveFunc = lambda x: x / norm
 
         self.IntegralNuLightCurveFunc = np.vectorize(IntegralNuLightCurveFunc)
         t = np.linspace(t_min, t_max, 1.e4)
         y = self.IntegralNuLightCurveFunc(t)
 
-        self.InversInterpol = interp1d(self.IntegralNuLightCurveFunc(t), t,
-                                       kind='linear')
+        self.InversInterpol = interp1d(
+            self.IntegralNuLightCurveFunc(t), t, kind='linear')
+
+        # Sets the recon model, which is independent of the simulation model
+
+        self.ReconNuLightCurveFunc = lambda x: tm.return_light_curve(
+            self.ReconTimeModel, x,
+            self.ReconTimeParameters)
+        t_max = self.ReconTimeParameters["length"]
+        norm = (t_max - t_min)
+        ReconIntegralNuLightCurveFunc = lambda x: x / norm
+
+        self.ReconIntegralNuLightCurveFunc = np.vectorize(
+            ReconIntegralNuLightCurveFunc)
+        t = np.linspace(t_min, t_max, 1.e4)
+        y = self.ReconIntegralNuLightCurveFunc(t)
+
+        self.ReconInversInterpol = interp1d(
+            self.ReconIntegralNuLightCurveFunc(t), t, kind='linear')
+
         return self.InversInterpol
 
     def generate_n_random_numbers(self, n_events, ):

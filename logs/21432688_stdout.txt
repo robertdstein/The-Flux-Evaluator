@@ -1,0 +1,15 @@
+/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/data_configs/full.ini
+0.214285714286
+0 Memory usage: 0.1020390625 (Gb)
+Memory usage max: 0.104496 (Gb)
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+Injection Spectrum 2.0
+Initialising Energy PDFs
+10.0 %

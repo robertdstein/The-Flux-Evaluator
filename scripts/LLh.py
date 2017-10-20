@@ -22,7 +22,7 @@ from scripts.RandomTools import RandomTools
 import resource
 
 
-class LLh(PDF, Injector):
+class LLh(PDF, Injector, RandomTools):
 
     """A class for the Log Likelihood. Handles loading the data, preparing
     randomised datasets based on the data, and calculates the Log Likelihood
@@ -86,7 +86,6 @@ class LLh(PDF, Injector):
         self.exp = np.load(kwargs['ExpPath'])
         self.mc = np.load(kwargs['MCPath'])
 
-        # ***********************************************************************
         # Loads sources from the given source path
         # Adds field to numpy array
         self._sources2 = np.load(kwargs['SourcePath'])
@@ -121,35 +120,32 @@ class LLh(PDF, Injector):
 
         # Sets UseTime and Time Model (Box/BoxPre/Decay)
         self.UseTime = kwargs['UseTime']
-        self.TimeModel = kwargs['TimeModel']
+        self.SimTimeModel = kwargs['SimTimeModel']
+        self.ReconTimeModel = kwargs['ReconTimeModel']
 
         # If fitting for time
         if self.UseTime:
-            # **************************************************************************************************************************
             # Adds a 'Discovery Delay' (10 days), which is subtracted from
-            # discovery date
-            self.DiscDelay = 10.
+            # discovery date to give a conservative time window
+            self.DiscDelay = 0.
             self.sources['discoverydate_mjd'] = (
                 self.sources['discoverydate_mjd'] - self.DiscDelay)
 
-            if self.TimeModel == 'Box':
-                self.TimeBoxLength = kwargs['TimeBoxLength']
+# ******************************************************************************
 
-            if self.TimeModel == 'BoxPre':
-                self.TimeBoxLength = kwargs['TimeBoxLength']
+            self.SimTimeLength = kwargs['SimTimeParameters']["length"]
+            self.SimTimeParameters = kwargs['SimTimeParameters']
 
-            if self.TimeModel == 'Decay':
-                # Sets Model Timescale (p-p), and decay mode length
-                self.Model_tpp = kwargs['Model_tpp']
-                self.DecayModelLength = kwargs['DecayModelLength']
-                self.Model_Length = self.DecayModelLength
+            self.ReconTimeLength = kwargs["ReconTimeParameters"]["length"]
+            self.ReconTimeParameters = kwargs["ReconTimeParameters"]
+
 
         # ****************************************************************************************************************************************
         # Sets smear Injection and MissTiming
         # Inject with wrong weight
-        # MT Inject with scaled time window (longer/shorter
-        self.SmearInjection = kwargs['SmearInjection']
-        self.MissTiming = kwargs['MissTiming']
+        # MT Inject with scaled time window (longer/shorter)
+        self.SmearInjection = 0.
+        # self.MissTiming = kwargs['MissTiming']
 
         # Creates empty dictionary, filled by Injector.find_and_apply_band_mask
         self.InjectionBandMask = dict()

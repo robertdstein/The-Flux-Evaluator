@@ -7,7 +7,7 @@ python RunCluster.py -c Desired_Configuration_Name -n Number_Of_Tasks -s
 
 Each available configuration must be listed in "config.ini", and controls
 options for fitting, such as which catalogue is to be used, and which seasons
-of data should be included. If -s is included, then a new job is submitted
+of data should be included. If -x is included, then a new job is submitted
 to the cluster. Having submitted the job to the cluster it will be run in
 parallel Number_of_Tasks times. The shell script SubmitOne.sh is called for
 each task, which in turn calls RunLocal.py with the given configuration setting.
@@ -24,14 +24,6 @@ import time
 import os.path
 import argparse
 import MergeFiles as Mf
-
-parser = argparse.ArgumentParser()
-parser.add_argument("-n", "--n", default=50, help="Number of tasks to run")
-parser.add_argument("-s", "--submit", action="store_true",
-                    help="Toggle to submit job to cluster")
-parser.add_argument("-c", "--config", default="Full_with_DaiFang_TDE",
-                    help="Sets configuration for LLh minimisation")
-cfg = parser.parse_args()
 
 cmd = 'qstat -u steinrob'
 
@@ -65,29 +57,52 @@ def wait_for_cluster():
         tmp = str(process.stdout.read())
 
 
-# If the job should be submitted
-if cfg.submit:
-    import ConfigParser
+def submit_to_cluster(
+        tasks, config, conf_file="config.ini", ntrials=50, steps=15):
+    # Submits job to the cluster, with a command in the form of:
+    # qsub -t 1-50:1 SubmitOne.sh Full_with_DaiFang_TDE
+    submit_cmd = "qsub -t 1-" + str(tasks) + ":1 SubmitOne.sh " + config \
+                 + " " + conf_file + " " + str(ntrials) + " " + str(steps)
+    print time.asctime(time.localtime()), submit_cmd, "\n"
+    os.system(submit_cmd)
 
-    # Sets root directory for config.ini file
-    root = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
+# If script is run from command line, automatically uses run()
+# If imported into another script, run() must be explicitly called
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--tasks", default=50,
+                        help="Number of tasks to run")
+    parser.add_argument("-x", "--execute", action="store_true",
+                        help="Toggle to submit job to cluster")
+    parser.add_argument("-c", "--config", default="Full_with_DaiFang_TDE",
+                        help="Sets configuration for LLh minimisation")
+    parser.add_argument("-f", "--conf_file", default="config.ini")
+    parser.add_argument("-n", "--ntrials", default=15,
+                        help="Number of trials per flux step per task")
+    parser.add_argument("-s", "--step", default=15,
+                        help="Number of flux steps per task")
+    cfg = parser.parse_args()
 
-    conf = ConfigParser.ConfigParser()
-    conf.read(root + "config.ini")
+    # If the job should be submitted
+    if cfg.execute:
+        import ConfigParser
 
-    if cfg.config not in conf.sections():
-        print "Searching for config section", cfg.config, "in", conf.sections()
-        raise Exception("Config file not found.")
+        # Sets root directory for config.ini file
+        root = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
 
-    else:
+        conf = ConfigParser.ConfigParser()
+        conf.read(root + cfg.conf_file)
 
-        # Submits job to the cluster, with a command in the form of:
-        # qsub -t 1-50:1 SubmitOne.sh Full_with_DaiFang_TDE
-        submit_cmd = "qsub -t 1-" + str(cfg.n) + ":1 SubmitOne.sh " + cfg.config
-        print time.asctime(time.localtime()), submit_cmd, "\n"
-        os.system(submit_cmd)
+        if cfg.config not in conf.sections():
+            print "Searching for config section", cfg.config,
+            print "in", conf.sections()
+            raise Exception("Config file not found.")
+        else:
+            submit_to_cluster(cfg.tasks, cfg.config, cfg.conf_file,
+                              cfg.ntrials, cfg.step)
 
-# In any case, check for the cluster
-wait_for_cluster()
 
-Mf.run(cfg.config)
+    # In any case, check for the cluster
+    wait_for_cluster()
+
+    Mf.run(cfg.config)

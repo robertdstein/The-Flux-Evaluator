@@ -32,7 +32,7 @@ def read_in_catalogue():
     sources['weight'] = np.array([1.0])
     sources['distance'] = np.array([1.0])
     sources['discoverydate_mjd'] = (
-        np.array([55694.4164699]) - 0.5 * 368.00423609999416)
+        np.array([55800.4164699]) )
     sources['name'] = 'SN_01'
 
     return sources
