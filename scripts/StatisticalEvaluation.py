@@ -242,7 +242,13 @@ class Sensitivity():
                        "\mathrm{d}E$ [ TeV cm$^{-2}$ s$^{-1}$]")
             plt.xlabel(r'Signal Flux Strength')
             plt.ylabel(r'chance for $\lambda$ over threshold')
-            plt.savefig(str(self.plot_path) + 'sens.pdf')
+
+            save_path = str(self.plot_path) + 'sens.pdf'
+            save_dir = os.path.dirname(save_path)
+            if not os.path.isdir(save_dir):
+                os.mkdir(save_dir)
+
+            plt.savefig(save_path)
             plt.show()
 
         fits = dict()

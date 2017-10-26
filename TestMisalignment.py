@@ -71,17 +71,46 @@ for i in offsets:
         datapoints["offset"].append(i)
         datapoints["interpolation"].append(fits["interpolation"])
         datapoints["polynom"].append(fits["polynom"])
-        datapoints["analytic"].append(fits["mine"])
 
 plt.figure()
 plt.plot(datapoints["offset"], datapoints["interpolation"],
-         label="interpolation")
+         label="Interpolation")
 plt.plot(datapoints["offset"], datapoints["polynom"],
-         label="ploynomial")
-plt.plot(datapoints["offset"], datapoints["analytic"],
-         label="Analytic Solution")
-plt.xlabel("Offset")
-plt.ylabel("Sensitivity")
+         label="Polynomial")
+
+n_points = 1
+
+min_val = min(datapoints["polynom"])
+min_index = datapoints["polynom"].index(min_val)
+low_index = max(min_index-n_points, 0)
+high_index = min(min_index + n_points + 1, len(datapoints["polynom"]))
+
+dataset = datapoints["polynom"][low_index: high_index]
+min_offsets = datapoints["offset"][low_index: high_index]
+
+parabola = np.polyfit(min_offsets, dataset, 2)
+
+def f(x):
+    return (parabola[0] * (x ** 2)) + (parabola[1] * x) + parabola[2]
+
+fitted_offset = parabola[1] / (2 * parabola[0])
+fitted_sens = f(fitted_offset)
+
+message = "Minimum occurs at " + str.format('{0:.1f}', fitted_offset) + " \n"
+message += "Minimum sensitivity is " + str.format('{0:.2f}', fitted_sens)
+
+print message
+
+plt.annotate(message, xy=(0.3, 0.9), xycoords="axes fraction")
+
+mask = f(np.array(datapoints["offset"])) < max(datapoints["polynom"])
+
+plt.plot(np.array(datapoints["offset"])[mask],
+         f(np.array(datapoints["offset"])[mask]),
+         linestyle="--", label="Parabola")
+
+plt.xlabel("Offset (Days)")
+plt.ylabel("Sensitivity (Arbitrary Units)")
 plt.legend()
 plt.tight_layout()
 plot_path = user_dir + "plots/combined_test_misalignment.pdf"
