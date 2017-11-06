@@ -30,38 +30,73 @@ class RandomTools(object, ):
 
         :return: Inverse interpolation of integrated light curve
         """
-        t_min = 0.
+        t_min = self.SimTimeParameters["t0"]
+        # t_min = 0
 
-        self.NuLightCurveFunc = lambda x: tm.return_light_curve(
-            self.SimTimeModel, x,
-            self.SimTimeParameters)
-        t_max = self.SimTimeParameters["length"]
-        norm = (t_max - t_min)
-        IntegralNuLightCurveFunc = lambda x: x / norm
+        # -------- Simulation Section --------
 
+        # Sets the simulated neutrino light curve
+
+        self.NuLightCurveFunc = lambda t : tm.return_light_curve(t,
+            self.SimTimeModel, self.SimTimeParameters)
+
+        # Sets the integrated light curve function, normalised to yield 1 at
+        # t = model_end
+
+        IntegralNuLightCurveFunc = lambda t: tm.return_integrated_light_curve(t,
+            self.SimTimeModel, self.SimTimeParameters)
         self.IntegralNuLightCurveFunc = np.vectorize(IntegralNuLightCurveFunc)
+
+        # Sets the maximum t covered by the light curve, and generates a
+        # range of t values. Linearly interpolates the integral function,
+        # as a function of t
+
+        t_max = self.SimTimeParameters["length"] + self.SimTimeParameters["t0"]
+        # t_max = self.SimTimeParameters["length"]
+
         t = np.linspace(t_min, t_max, 1.e4)
-        y = self.IntegralNuLightCurveFunc(t)
 
         self.InversInterpol = interp1d(
             self.IntegralNuLightCurveFunc(t), t, kind='linear')
 
-        # Sets the recon model, which is independent of the simulation model
+        # print t
+        # print self.IntegralNuLightCurveFunc(t)
+        # print IntegralNuLightCurveFunc(t)
+        # raw_input("prompt")
 
-        self.ReconNuLightCurveFunc = lambda x: tm.return_light_curve(
-            self.ReconTimeModel, x,
-            self.ReconTimeParameters)
-        t_max = self.ReconTimeParameters["length"]
-        norm = (t_max - t_min)
-        ReconIntegralNuLightCurveFunc = lambda x: x / norm
+        # -------- Reconstruction Section --------
+
+        # Sets the recon light curve, which is independent of the simulation
+        # model
+
+        self.ReconNuLightCurveFunc = lambda t: tm.return_light_curve(t,
+            self.ReconTimeModel, self.ReconTimeParameters)
+
+        # Sets the recon integrated light curve function, normalised to yield
+        # 1 at t = recon_model_end
+
+        ReconIntegralNuLightCurveFunc = \
+            lambda t: tm.return_integrated_light_curve(t,
+            self.ReconTimeModel, self.ReconTimeParameters)
 
         self.ReconIntegralNuLightCurveFunc = np.vectorize(
             ReconIntegralNuLightCurveFunc)
-        t = np.linspace(t_min, t_max, 1.e4)
-        y = self.ReconIntegralNuLightCurveFunc(t)
+
+        # Sets the maximum t covered by the recon light curve, and generates a
+        # range of t values. Linearly interpolates the recon integral function,
+        # as a function of t
+
+        recon_t_min = self.ReconTimeParameters["t0"]
+
+        recon_t_max = self.ReconTimeParameters["length"] +\
+                      self.ReconTimeParameters["t0"]
+
+        recon_t = np.linspace(recon_t_min, recon_t_max, 1.e4)
 
         self.ReconInversInterpol = interp1d(
-            self.ReconIntegralNuLightCurveFunc(t), t, kind='linear')
+            self.ReconIntegralNuLightCurveFunc(recon_t), recon_t, kind='linear')
+
+        # raw_input("prompt")
 
         return self.InversInterpol
 

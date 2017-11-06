@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py", line 101, in <module>
+    k=i, n_trials=n_trials, path=path, seed=seed)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 63, in generate_test_statistics
+    self.write_result_to_file(path, k, test_stats)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 288, in write_result_to_file
+    self.check_if_pkl_file_exists(path)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 316, in check_if_pkl_file_exists
+    pkl_file = open(path, 'wb')
+IOError: [Errno 27] File too large: '/afs/ifh.de/user/s/steinrob/scratch/stacking_dump/results_test_contours/results_150.0_70.0__69.9624679605_1204217811.pkl'

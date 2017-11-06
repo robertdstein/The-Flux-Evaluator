@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py", line 101, in <module>
+    k=i, n_trials=n_trials, path=path, seed=seed)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 62, in generate_test_statistics
+    test_stats = self.generate_trials(n_trials, k=k, )
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 126, in generate_trials
+    season.prepare_fake_data_set_and_evaluate_pdf(k, )
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/LLh.py", line 220, in prepare_fake_data_set_and_evaluate_pdf
+    self.sig_events = self.generate_sig_events(self.sources, self.mc, k, )
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/Injector.py", line 32, in generate_sig_events
+    sig_events = self.extract_events_from_mc(inject_sources, mc,)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/Injector.py", line 167, in extract_events_from_mc
+    source['discoverydate_mjd'] +
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/RandomTools.py", line 112, in generate_n_random_numbers
+    values = self.InversInterpol(np.random.uniform(0., 1., n_events))
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/scipy/interpolate/polyint.py", line 79, in __call__
+    y = self._evaluate(x)
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/scipy/interpolate/interpolate.py", line 498, in _evaluate
+    out_of_bounds = self._check_bounds(x_new)
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/scipy/interpolate/interpolate.py", line 525, in _check_bounds
+    raise ValueError("A value in x_new is below the interpolation "
+ValueError: A value in x_new is below the interpolation range.

@@ -20,6 +20,7 @@ from scripts.StatisticalEvaluation import Sensitivity
 
 import ConfigParser
 import argparse
+import os
 
 
 def run(config_name,
@@ -36,7 +37,11 @@ def run(config_name,
     generation_control_instance = GenerationControl()
 
     path = "/afs/ifh.de/user/s/steinrob/scratch/stacking_dump/results"
-    out_put_path = root + "merged/results"
+    out_put_path = os.path.dirname(path) + "/merged/results"
+    out_put_dir = os.path.dirname(out_put_path)
+    if not os.path.isdir(out_put_dir):
+        os.makedirs(out_put_dir)
+        print "Making", out_put_dir
     plot_path = root + "plots/"
 
     generation_control_instance.merge_test_result_pickles(

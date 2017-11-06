@@ -43,8 +43,21 @@ def wait_for_cluster():
     j = 6
     while tmp != "":
         if i > 3:
-            print time.asctime(time.localtime()), len(tmp.split('\n')) - 3, \
-                "entries in queue"
+
+            n_total = len(tmp.split('\n')) - 3
+
+            running_process = subprocess.Popen(
+                cmd + " -s r", stdout=subprocess.PIPE, shell=True)
+            running_tmp = str(running_process.stdout.read())
+
+            if running_tmp != "":
+                n_running = len(running_tmp.split('\n')) - 3
+            else:
+                n_running = 0
+
+            print time.asctime(time.localtime()), n_total, "entries in queue. ",
+            print "Of these,", n_running, "are running tasks, and",
+            print n_total-n_running, "are jobs still waiting to be executed."
             print time.asctime(time.localtime()), "Waiting for Cluster"
             i = 0
             j += 1

@@ -57,7 +57,7 @@ class GenerationControl(object, ):
         # Checks the Pickle Directory exists, and if not, creates it
         results_dir = os.path.dirname(path)
         if not os.path.isdir(results_dir):
-            os.mkdir(results_dir)
+            os.makedirs(results_dir)
 
         test_stats = self.generate_trials(n_trials, k=k, )
         self.write_result_to_file(path, k, test_stats)
@@ -313,9 +313,8 @@ class GenerationControl(object, ):
             pass
         else:
             test_stat_results = {}
-            pkl_file = open(path, 'wb')
-            pickle.dump(test_stat_results, pkl_file)
-            pkl_file.close()
+            with open(path, 'wb') as pkl_file:
+                pickle.dump(test_stat_results, pkl_file)
             print path, ' created'
 
     def print_generation_overview(self, path):
@@ -325,9 +324,8 @@ class GenerationControl(object, ):
         :param path: Pickle File path
         """
         self.check_if_pkl_file_exists(path)
-        pkl_file = open(path, 'rb')
-        test_stat_results = pickle.load(pkl_file)
-        pkl_file.close()
+        with open(path, 'rb') as pkl_file:
+            test_stat_results = pickle.load(pkl_file)
         print ''
         for key in np.sort(test_stat_results.keys()):
             print key, len(test_stat_results[key])
@@ -361,7 +359,7 @@ class GenerationControl(object, ):
         # Checks if results directory exists
         output_dir = os.path.dirname(output_path)
         if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
+            os.makedirs(output_dir)
 
         # Creates an empty Pickle Path for results
         if os.path.isfile(output_path):
@@ -387,7 +385,6 @@ class GenerationControl(object, ):
                     test_stat_results[k] = single_result[k]
 
         # Saves merged file and prints results
-        pkl_file = open(output_path, 'wb')
-        pickle.dump(test_stat_results, pkl_file)
-        pkl_file.close()
+        with open(output_path, 'wb') as pkl_file:
+            pickle.dump(test_stat_results, pkl_file)
         self.print_generation_overview(output_path)

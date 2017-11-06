@@ -162,9 +162,10 @@ class Injector():
 
             # Generates random numbers according to Time profile
             if self.UseTime is True:
-                sam_ev['timeMJD'] = (self.generate_n_random_numbers(n_signal) +
-                                     source['discoverydate_mjd'] +
-                                     self.SimTimeParameters["t0"])
+                sam_ev['timeMJD'] = (
+                    self.generate_n_random_numbers(n_signal) +
+                    source['discoverydate_mjd'] +
+                    self.SimTimeParameters["t0"])
                 sam_ev = self.check_time_borders(sam_ev, )
 
             sig_events = np.concatenate((sig_events, sam_ev))

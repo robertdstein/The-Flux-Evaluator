@@ -1,0 +1,5 @@
+/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/data_configs/fast.ini
+255.74941207
+0 Memory usage: 0.103265625 (Gb)
+Memory usage max: 0.105752 (Gb)
+Injection Spectrum 2.0

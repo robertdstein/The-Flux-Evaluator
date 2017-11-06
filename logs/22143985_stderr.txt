@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py", line 101, in <module>
+    k=i, n_trials=n_trials, path=path, seed=seed)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 62, in generate_test_statistics
+    test_stats = self.generate_trials(n_trials, k=k, )
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/GenerationControl.py", line 115, in generate_trials
+    new_instance.init_everything_for_multiple_trials()
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/LLh.py", line 277, in init_everything_for_multiple_trials
+    self.init_random_generator_pdf()
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/RandomTools.py", line 60, in init_random_generator_pdf
+    self.IntegralNuLightCurveFunc(t), t, kind='linear')
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/numpy/lib/function_base.py", line 1700, in __call__
+    return self._vectorize_call(func=func, args=vargs)
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/numpy/lib/function_base.py", line 1763, in _vectorize_call
+    ufunc, otypes = self._get_ufunc_and_otypes(func=func, args=args)
+  File "/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/lib/python2.7/site-packages/numpy/lib/function_base.py", line 1725, in _get_ufunc_and_otypes
+    outputs = func(*inputs)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/RandomTools.py", line 47, in <lambda>
+    self.SimTimeModel, self.SimTimeParameters)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/time_models.py", line 167, in return_integrated_light_curve
+    return box_func_integrated(t, parameters)
+  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/scripts/time_models.py", line 63, in box_func_integrated
+    val[t > box_dict["model_end"]] = 1
+TypeError: 'numpy.float64' object does not support item assignment
