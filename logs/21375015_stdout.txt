@@ -1,25 +1,0 @@
-/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/data_configs/fast.ini
-2.0
-0 Memory usage: 0.10165234375 (Gb)
-Memory usage max: 0.1041 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_box__2.0_4196446629.pkl  created
-
----------------------
-1.0
-0 Memory usage: 0.27102734375 (Gb)
-Memory usage max: 0.3024 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_box__1.0_4196446630.pkl  created
-
----------------------
-0.0
-0 Memory usage: 0.2710234375 (Gb)
-Memory usage max: 0.30468 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_box__0.0_4196446631.pkl  created
-
----------------------

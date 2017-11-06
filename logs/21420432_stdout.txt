@@ -1,49 +1,0 @@
-/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/data_configs/fast.ini
-1.0
-0 Memory usage: 0.1017734375 (Gb)
-Memory usage max: 0.104224 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_DaiFang_TDE__1.0_1668794235.pkl  created
-
----------------------
-0.4
-0 Memory usage: 0.29005859375 (Gb)
-Memory usage max: 0.302532 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_DaiFang_TDE__0.4_1668794236.pkl  created
-
----------------------
-0.2
-0 Memory usage: 0.45252734375 (Gb)
-Memory usage max: 0.46408 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_DaiFang_TDE__0.2_1668794237.pkl  created
-
----------------------
-0.0
-0 Memory usage: 0.62023046875 (Gb)
-Memory usage max: 0.63512 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_DaiFang_TDE__0.0_1668794238.pkl  created
-
----------------------
-0.8
-0 Memory usage: 0.77645703125 (Gb)
-Memory usage max: 0.795096 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_DaiFang_TDE__0.8_1668794239.pkl  created
-
----------------------
-0.6
-0 Memory usage: 0.9442578125 (Gb)
-Memory usage max: 0.966924 (Gb)
-Injection Spectrum 2.0
-Initialising Energy PDFs
-10.0 %20.0 %30.0 %40.0 %50.0 %60.0 %70.0 %80.0 %90.0 %100.0 %/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/results/results_Fast_with_DaiFang_TDE__0.6_1668794240.pkl  created
-
----------------------

@@ -62,13 +62,13 @@ with open(test_configs_file, "w") as f:
 
 if cfg.submit:
     for section in Config.sections():
-         os.system(
-             "python " +
-             "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py" +
-             " -c " + section + " -f " + file_name + " -n 100 -s 10")
+         # os.system(
+         #     "python " +
+         #     "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py" +
+             # " -c " + section + " -f " + file_name + " -n 100 -s 10")
 
-    #     RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
-    # RC.wait_for_cluster()
+        RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
+    RC.wait_for_cluster()
 
 all_fitted_lengths = []
 all_fitted_sens = []

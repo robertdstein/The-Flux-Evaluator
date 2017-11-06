@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py", line 19, in <module>
-    raise Exception("Config file not found.")
-Exception: Config file not found.

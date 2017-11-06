@@ -132,6 +132,15 @@ def analytic_func(t, parameters):
     return r
 
 def analytic_integrated(t, parameters):
+    """Returns the ratio of the integral of the Analytic expoential decay model
+    from -infinity to t, and -infinity to +infinity.
+
+    :param t: Time
+    :param parameters: Parameters for analytic model ("t0" is offset of neutrino
+    lightcurve relative to discovery date, "length" is width of emission
+    box and "t_pp" is the time constant.)
+    :return: Fraction of total integral covered up to t
+    """
     a_dict = analytic_dict(parameters)
     t = np.asarray(t)
     r = np.ones_like(t)
@@ -158,6 +167,14 @@ def analytic_overlap(data_start, data_end, discovery_date, parameters):
 
 
 def return_light_curve(t, name, parameters):
+    """Returns the light curve function corresponding to a given name
+
+    :param t: Time
+    :param name: Name of model
+    :param parameters: Dictionary containing all necessary parameters for
+    the given model
+    :return: The light curve function
+    """
     if name == "Box":
         return box_func(t, parameters)
     elif name == 'Decay':
@@ -184,6 +201,8 @@ def return_norms(name, data_start, data_end, discovery_date, parameters):
         raise Exception("Model not found!")
 
 if __name__ == '__main__':
+    # If this script is simply run directly, it will produce plots of both
+    # the time PDFs and their integral functions
 
     import matplotlib
 
@@ -202,7 +221,7 @@ if __name__ == '__main__':
     parameters = {
         "t0": 100,
         "length" : 100,
-        "t_pp" : 1,
+        "t_pp" : 0.1,
     }
     for model in ["Box", "Decay"]:
         ax1.plot(

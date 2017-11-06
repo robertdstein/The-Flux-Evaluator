@@ -1,4 +1,0 @@
-0.0
-0 Memory usage: 0.0969453125 (Gb)
-Memory usage max: 0.09928 (Gb)
-10.0 %
