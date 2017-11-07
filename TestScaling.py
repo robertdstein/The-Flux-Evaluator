@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--submit", action="store_true")
 cfg = parser.parse_args()
 
-user_dir = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
+user_dir = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
 file_name = "test_scaling.ini"
 pickle_names = "test_scaling/length_"
 
@@ -22,7 +22,7 @@ test_configs_file = user_dir + file_name
 
 Config = ConfigParser.ConfigParser()
 
-lengths = np.linspace(10, 300, 30)
+lengths = np.linspace(50, 300, 6)
 sim_length = 100
 
 with open(test_configs_file, "w") as f:
@@ -53,13 +53,12 @@ with open(test_configs_file, "w") as f:
 
 if cfg.submit:
     for section in Config.sections():
-        # os.system(
-        #     "python " +
-        #     "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py" +
-        #     " -c " + section + " -f " + file_name + " -n 100 -s 10")
+        os.system(
+            "python " + user_dir + "RunLocal.py" +
+            " -c " + section + " -f " + file_name + " -n 100 -s 5")
 
-        RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
-    RC.wait_for_cluster()
+    #     RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
+    # RC.wait_for_cluster()
 
 allfits = []
 
@@ -72,7 +71,7 @@ datapoints = {
 
 for i in lengths:
     name = pickle_names + str(i)
-    fits = MF.run(name)
+    fits = MF.run(name, user_dir)
     if fits is not None:
         datapoints["length"].append(i)
         datapoints["interpolation"].append(fits["interpolation"])

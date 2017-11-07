@@ -24,7 +24,7 @@ import os
 
 
 def run(config_name,
-        root="/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"):
+        root="/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"):
     """Checks if given configuration exists in the config.ini file, with a
     name matching the one given. If so, merges the test results into one
     pickle file, and produces Sensitivity graphs for the given configuration

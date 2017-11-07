@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--submit", action="store_true")
 cfg = parser.parse_args()
 
-user_dir = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
+user_dir = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
 file_name = "test_misalignment.ini"
 pickle_names = "test_misalignment/offset_"
 
@@ -21,7 +21,7 @@ test_configs_file = user_dir + file_name
 
 Config = ConfigParser.ConfigParser()
 
-offsets = np.linspace(-95, 95, 39)
+offsets = np.linspace(-90, 90, 37)
 
 with open(test_configs_file, "w") as f:
     for i in offsets:
@@ -48,8 +48,7 @@ with open(test_configs_file, "w") as f:
 if cfg.submit:
     for section in Config.sections():
         # os.system(
-        #     "python " +
-        #     "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py" +
+        #     "python " + user_dir + "RunLocal.py" +
         #     " -c " + section + " -f " + file_name + " -n 100 -s 10")
 
         RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
@@ -66,7 +65,7 @@ datapoints = {
 
 for i in offsets:
     name = pickle_names + str(i)
-    fits = MF.run(name)
+    fits = MF.run(name, user_dir)
     if fits is not None:
         datapoints["offset"].append(i)
         datapoints["interpolation"].append(fits["interpolation"])

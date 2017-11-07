@@ -36,7 +36,7 @@ parser.add_argument("-s", "--step", default=15, help="Number of flux steps")
 cfg = parser.parse_args()
 
 # Sets the root directory containing scripts and config files/subdirectories
-root = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
+root = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
 
 conf = ConfigParser.ConfigParser()
 config_path = root + cfg.conf_file
