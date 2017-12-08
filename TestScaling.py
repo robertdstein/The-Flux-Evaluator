@@ -22,7 +22,7 @@ test_configs_file = user_dir + file_name
 
 Config = ConfigParser.ConfigParser()
 
-lengths = np.linspace(50, 300, 6)
+lengths = np.linspace(5, 300, 60)
 sim_length = 100
 
 with open(test_configs_file, "w") as f:
@@ -51,14 +51,16 @@ with open(test_configs_file, "w") as f:
 
     Config.write(f)
 
+os.system("rm " + user_dir + "logs/*")
+
 if cfg.submit:
     for section in Config.sections():
-        os.system(
-            "python " + user_dir + "RunLocal.py" +
-            " -c " + section + " -f " + file_name + " -n 100 -s 5")
+        # os.system(
+        #     "python " + user_dir + "RunLocal.py" +
+        #     " -c " + section + " -f " + file_name + " -n 100 -s 5")
 
-    #     RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
-    # RC.wait_for_cluster()
+        RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
+    RC.wait_for_cluster()
 
 allfits = []
 

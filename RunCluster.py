@@ -61,9 +61,9 @@ def wait_for_cluster():
             print time.asctime(time.localtime()), "Waiting for Cluster"
             i = 0
             j += 1
-        if j > 5:
-            print tmp
-            j = 0
+        # if j > 5:
+        #     print tmp
+        #     j = 0
         time.sleep(30)
         i += 1
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)

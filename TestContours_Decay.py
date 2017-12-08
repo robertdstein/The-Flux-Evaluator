@@ -10,6 +10,7 @@ import MergeFiles as MF
 import RunCluster as RC
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
+from scripts import time_models as tm
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--submit", action="store_true")
@@ -17,8 +18,8 @@ cfg = parser.parse_args()
 
 user_dir = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
 save_dir = "/afs/ifh.de/user/s/steinrob/scratch/The-Flux-Evaluator__Output/"
-file_name = "test_contours.ini"
-pickle_names = "test_contours/results_"
+file_name = "test_contours_decay.ini"
+pickle_names = "test_contours_decay/results_"
 
 test_configs_file = user_dir + file_name
 
@@ -28,6 +29,7 @@ lower_length = 5
 upper_length = 150
 
 lengths = np.linspace(lower_length, upper_length, 30)
+# lengths = [5.]
 sim_length = 50
 
 offsets = np.linspace(-95, 55, 31)
@@ -42,14 +44,15 @@ with open(test_configs_file, "w") as f:
         for offset in offsets:
             if ((offset + length) > 0) and (sim_length > offset):
                 name = pickle_names + str(length) + "/" + str(offset)
+                sim_params = {"t0": source_time, "length": sim_length,
+                              "t_pp": 1.0}
                 Config.add_section(name)
                 Config.set(name, "UseEnergy", False)
                 Config.set(name, "FitGamma", True)
                 Config.set(name, "FixedGamma", 2)
                 Config.set(name, "UseTime", True)
-                Config.set(name, "SimTimeModel", "Box")
-                Config.set(name, "SimTimeParameters", {
-                    "t0": source_time, "length": sim_length})
+                Config.set(name, "SimTimeModel", "Decay")
+                Config.set(name, "SimTimeParameters", sim_params)
                 Config.set(name, "ReconTimeModel", "Box")
                 Config.set(name, "ReconTimeParameters", {
                     "t0": source_time + offset, "length": length})
@@ -60,14 +63,30 @@ with open(test_configs_file, "w") as f:
                            "Catalogue/catalogue00.npy")
                 Config.set(name, "DataConfig", "fast.ini")
 
-                maxk = 70 * (50 / sim_length) * ((sim_length / (
-                    min([offset + length, sim_length])
-                    - max([offset, 0])))
-                )
+                sim = tm.return_integrated_light_curve(source_time + offset,
+                                                       "Decay", sim_params)
+
+                alt = tm.return_integrated_light_curve(
+                    source_time + offset + sim_length, "Decay", sim_params)
+
+                maxk = 80 * (((1. / (alt - sim)) +
+                             math.sqrt(length / 100.)))
+
+                N = alt - sim
+
+                bkg = length
+
+                Nsum = N + math.sqrt(length)
+
+                scale = 20
+
+                print length, offset, maxk, sim, alt
 
                 Config.set(name, "MaxK", maxk)
-
+        # raw_input("prompt")
     Config.write(f)
+
+# raw_input("prompt")
 
 if cfg.submit:
 
@@ -79,7 +98,7 @@ if cfg.submit:
          #     "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py" +
              # " -c " + section + " -f " + file_name + " -n 100 -s 10")
 
-        RC.submit_to_cluster(10, section, file_name, ntrials=150, steps=20)
+        RC.submit_to_cluster(10, section, file_name, ntrials=100, steps=20)
     RC.wait_for_cluster()
 
 all_fitted_lengths = []
@@ -167,8 +186,8 @@ for j, offset in enumerate(offsets):
         plt.ylabel("Sensitivity (Arbitrary Units)")
         plt.legend()
         plt.tight_layout()
-        plot_path = save_dir + "plots/test_contours/offset_" + str(offset) + \
-                    ".pdf"
+        plot_path = save_dir + "plots/test_contours_decay/offset_" + \
+                    str(offset) + ".pdf"
         output_dir = os.path.dirname(plot_path)
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
@@ -184,14 +203,14 @@ plt.figure()
 plt.plot(offsets, all_fitted_sens)
 plt.xlabel("Offset")
 plt.ylabel("Best Sensitivity")
-plt.savefig(save_dir + "plots/combined_contour_sens.pdf")
+plt.savefig(save_dir + "plots/combined_contour_decay_sens.pdf")
 plt.close()
 
 plt.figure()
 plt.plot(offsets, all_fitted_lengths)
 plt.xlabel("Offset")
 plt.ylabel("Reconstruction Length at Best Sensitivity")
-plt.savefig(save_dir + "plots/combined_contour_lengths.pdf")
+plt.savefig(save_dir + "plots/combined_contour_decay_lengths.pdf")
 plt.close()
 
 for i, map_to_plot in enumerate([sens_map, log_sens_map]):
@@ -213,7 +232,7 @@ for i, map_to_plot in enumerate([sens_map, log_sens_map]):
     plt.xlabel("Offset (Days)")
     plt.ylabel("Reconstruction Length (Days)")
 
-    plt.savefig(save_dir + "plots/combined_contour_map" + ["", "_log"][i]
+    plt.savefig(save_dir + "plots/combined_contour_decay_map" + ["", "_log"][i]
                 + ".pdf")
     plt.close()
 
@@ -274,7 +293,8 @@ for i, length in enumerate(lengths):
     plt.ylabel("Sensitivity (Arbitrary Units)")
     plt.legend()
     plt.tight_layout()
-    plot_path = save_dir + "plots/test_contours/length_" + str(length) + ".pdf"
+    plot_path = save_dir + "plots/test_contours_decay/length_" + str(length) + \
+                ".pdf"
     output_dir = os.path.dirname(plot_path)
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
