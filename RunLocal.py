@@ -29,7 +29,7 @@ from scripts.GenerationControl import GenerationControl
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--config", default="Fast_with_fit")
-parser.add_argument("-f", "--conf_file", default="config.ini")
+parser.add_argument("-f", "--conf_file", default="analysis_configs/config.ini")
 parser.add_argument("-n", "--ntrials", default=10, help="Number of trials")
 parser.add_argument("-s", "--step", default=15, help="Number of flux steps")
 

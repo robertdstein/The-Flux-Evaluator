@@ -71,10 +71,11 @@ def wait_for_cluster():
 
 
 def submit_to_cluster(
-        tasks, config, conf_file="config.ini", ntrials=50, steps=15):
+        tasks, config, conf_file="analysis_config/config.ini", ntrials=50,
+        steps=15, sh_file="SubmitOne.sh"):
     # Submits job to the cluster, with a command in the form of:
     # qsub -t 1-50:1 SubmitOne.sh Full_with_DaiFang_TDE
-    submit_cmd = "qsub -t 1-" + str(tasks) + ":1 SubmitOne.sh " + config \
+    submit_cmd = "qsub -t 1-" + str(tasks) + ":1 " + sh_file + " " + config \
                  + " " + conf_file + " " + str(ntrials) + " " + str(steps)
     print time.asctime(time.localtime()), submit_cmd, "\n"
     os.system(submit_cmd)
@@ -101,10 +102,11 @@ if __name__ == '__main__':
         import ConfigParser
 
         # Sets root directory for config.ini file
-        root = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
+        root = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
 
         conf = ConfigParser.ConfigParser()
-        conf.read(root + cfg.conf_file)
+        config_path = root + "analysis_config/" + cfg.conf_file
+        conf.read(config_path)
 
         if cfg.config not in conf.sections():
             print "Searching for config section", cfg.config,

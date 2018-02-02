@@ -58,11 +58,17 @@ def run(config_name,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", default="Fast_with_fit")
+    parser.add_argument("-f", "--conf_file", default="config.ini")
+
+    # Sets the root directory containing scripts and config files/subdirectories
+    root = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
 
     cfg = parser.parse_args()
 
+    config_path = root + "analysis_config/" + cfg.conf_file
+
     conf = ConfigParser.ConfigParser()
-    conf.read("config.ini")
+    conf.read(config_path)
 
     if cfg.config not in conf.sections():
         print "Searching for config section", cfg.config, "in", conf.sections()
