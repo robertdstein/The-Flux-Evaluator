@@ -28,8 +28,10 @@ import ConfigParser
 from scripts.GenerationControl import GenerationControl
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-c", "--config", default="Fast_with_fit")
-parser.add_argument("-f", "--conf_file", default="analysis_configs/config.ini")
+parser.add_argument("-c", "--config", default="Fast_with_fit",
+                    help="Name of config to be used")
+parser.add_argument("-f", "--conf_file", default="analysis_configs/config.ini",
+                    help="Name of config file, in which the config is found")
 parser.add_argument("-n", "--ntrials", default=10, help="Number of trials")
 parser.add_argument("-s", "--step", default=15, help="Number of flux steps")
 
@@ -60,6 +62,8 @@ else:
     data_conf_dir = root + "data_configs/" + conf.get(cfg.config, "DataConfig")
     print data_conf_dir
 
+    # Read in parameters from the config file
+
     settings = {'UseEnergy': eval(conf.get(cfg.config, "UseEnergy")),
                 'FitGamma': eval(conf.get(cfg.config, "FitGamma")),
                 'FixedGamma': float(conf.get(cfg.config, "FixedGamma")),
@@ -85,6 +89,7 @@ else:
     # Selects a range of flux scales, for later use in Sensitivity graphs
     # The maximum value should be given in the ConfigFile as MaxK
     k_values = np.linspace(0.0, float(conf.get(cfg.config, "MaxK")), cfg.step)
+    # k_values = [0.8]
 
     # Ensures that, if run over a cluster that can crash, a uniform
     # distribution over k values is sampled
