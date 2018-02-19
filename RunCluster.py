@@ -101,7 +101,7 @@ if __name__ == '__main__':
     if cfg.execute:
         import ConfigParser
 
-        # Sets root directory for config.ini file
+        # Sets source_path directory for config.ini file
         root = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
 
         conf = ConfigParser.ConfigParser()

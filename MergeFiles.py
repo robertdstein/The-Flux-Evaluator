@@ -17,35 +17,31 @@ RunCluster.py.
 """
 from scripts.GenerationControl import GenerationControl
 from scripts.StatisticalEvaluation import Sensitivity
-
+from common import results_path, plot_path, merge_path
 import ConfigParser
 import argparse
 import os
 
 
-def run(config_name,
-        root="/afs/ifh.de/user/s/steinrob/scratch/The-Flux-Evaluator__Output/"):
+def run(config_name):
     """Checks if given configuration exists in the config.ini file, with a
     name matching the one given. If so, merges the test results into one
     pickle file, and produces Sensitivity graphs for the given configuration
 
     :param config_name: Name of config to be used, must be in config.ini
-    :param root: path to directory containing results/, merged/, and plot/
-    directories.
     """
 
     generation_control_instance = GenerationControl()
 
-    path = "/afs/ifh.de/user/s/steinrob/scratch/stacking_dump/results"
-    out_put_path = os.path.dirname(path) + "/merged/results"
+    path = results_path
+    out_put_path = merge_path
     out_put_dir = os.path.dirname(out_put_path)
     if not os.path.isdir(out_put_dir):
         os.makedirs(out_put_dir)
         print "Making", out_put_dir
-    plot_path = root + "plots/"
 
     generation_control_instance.merge_test_result_pickles(
-        data_path=path, output_path=out_put_path, config_name=config_name)
+        data_root=path, output_root=out_put_path, config_name=config_name)
 
     sens = Sensitivity(path=out_put_path, plot_path=plot_path,
                        plotting=True, config=config_name)
@@ -60,7 +56,7 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--config", default="Fast_with_fit")
     parser.add_argument("-f", "--conf_file", default="config.ini")
 
-    # Sets the root directory containing scripts and config files/subdirectories
+    # Sets the source_path directory containing scripts and config files/subdirectories
     root = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
 
     cfg = parser.parse_args()

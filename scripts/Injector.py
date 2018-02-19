@@ -5,6 +5,7 @@ import RandomTools
 from scipy import stats
 from scipy.stats import norm
 import healpy as hp
+import time_models as tm
 
 class Injector():
 
@@ -22,14 +23,10 @@ class Injector():
         """
         inject_sources = copy.deepcopy(sources)
 
-        # Random Variates drawn from a normal distribution, with a width
-        # scale equal to 'SmearInjection'.
-        new_flux = inject_sources['flux'] * np.exp(stats.norm.rvs(
-            loc=0., scale=self.SmearInjection, size=len(sources)))
-        normalisation = np.sum(sources['flux']) / np.sum(new_flux)
-        inject_sources['flux'] = new_flux * normalisation * k
+        inject_sources['flux'] *= k
 
         sig_events = self.extract_events_from_mc(inject_sources, mc,)
+
         return sig_events
 
     def find_and_apply_band_mask(self, source, mc, dec_bandwidth):
@@ -80,46 +77,34 @@ class Injector():
 
         # Sets detector livetime in seconds
         livetime = self.Livetime * (60. * 60. * 24.)
-        #**************************************************************************
-        # Sometimes 10 degrees, sometimes 5? (PDF selects_events_in_band)
+
         # Conservative
         dec_bandwidth = np.deg2rad(5.)
         TotMuN = 0.
 
         # Loops over sources to add in expected number of neutrinos
         for source in sources:
+
+            # Checks to see if source is actually overlapping a given season
+
+            if self.UseTime is True:
+                if not source['weight_time'] > 0.0:
+                    continue
+
             # Only includes events lying in a +/- 5 degree declination band
             SourceMC, omega, band_mask = self.find_and_apply_band_mask(
                 source, mc, dec_bandwidth)
 
-            # If using time, calculates the Fluence using the time model
-            # Otherwise calculates Fluence as flux * livetime (i.e. constant)
-            if self.UseTime is True:
-                EfficencyFactor = livetime / (
-                    (self.DataEnd-self.DataStart) * 24. * 60. * 60.)
-                if self.SimTimeModel == 'Box':
-                    TotalTime = self.SimTimeLength
-                if self.SimTimeModel == 'BoxPre':
-                    TotalTime = self.SimTimeLength
-
-                # *************************************************************
-
-                if self.SimTimeModel == 'Decay':
-                    TotalTime = self.SimTimeLength * (
-                        np.log(self.Model_Length + self.Model_tpp)
-                        - np.log(0. + self.Model_tpp))
-
-                TotalTimeDays = TotalTime
-                TotalTime *= (60. * 60. * 24.)
-                fluence = EfficencyFactor * TotalTime * source['flux']
-            else:
-                fluence = source['flux'] * livetime
-
             if self._ReturnInjectorNExp is True:
                 source['weight_distance'] = 1.
 
-            # **************************************************************************
-            # Add in bracket?
+            # If using time, calculates the Fluence using the time model
+            # Otherwise calculates Fluence as flux * livetime (i.e. constant)
+            if self.UseTime is True:
+                fluence = source['flux'] * self.SimTimeLength * (60. * 60. * 24.)
+            else:
+                fluence = source['flux'] * livetime
+
             # Recalculates the one weights to account for the band mask?
             SourceMC['ow'] = (self.WeightsInject[band_mask] / omega) * source[
                 'weight_distance'] * fluence
@@ -133,8 +118,9 @@ class Injector():
             # If weighting for time, calculates weighted expectation value
             # for number of neutrinos, and adds it to total expectation value.
             if self.UseTime is True:
-                TotMuN += (MuN * source['weight_time'] / (TotalTimeDays /
-                                                          self.SeasonTimeSpan))
+                weightedMuN = MuN * source['weight_time']
+                TotMuN += weightedMuN
+
             # If not time weighting, simply adds expectation value to total.
             else:
                 TotMuN += MuN
@@ -164,11 +150,16 @@ class Injector():
             if self.UseTime is True:
                 sam_ev['timeMJD'] = (
                     self.generate_n_random_numbers(n_signal) +
-                    source['discoverydate_mjd'] +
-                    self.SimTimeParameters["t0"])
+                    source['discoverydate_mjd'])
+
+                # Checks that events lie within a given season
                 sam_ev = self.check_time_borders(sam_ev, )
 
             sig_events = np.concatenate((sig_events, sam_ev))
+
+        # print "Injecting", len(sig_events), sig_events
+        # raw_input("prompt")
+
         return sig_events
 
     def check_time_borders(self, sam_ev, ):
@@ -217,23 +208,22 @@ class Injector():
             print('WARNING: Running in Unblinding Mode')
         return exp
 
-    def inject_signal_events(self, exp, mc, sources, k=0., ):
-        """Adds signal events to to a dataset containing experimental data
-        (background).
+    # def inject_signal_events(self, exp, mc, sources, k=0., ):
+    #     """Adds signal events to to a dataset containing experimental data
+    #     (background).
+    #
+    #     :param exp: Experimental Data (background)
+    #     :param mc: Monte Carlo Data (signal)
+    #     :param sources: Set of sources
+    #     :param k: Flux scale
+    #     :return: Full dataset (original with added signal), and the new
+    #     signal events set
+    #     """
+    #     sig_events = self.generate_sig_events(sources, mc, k)
+    #     exp = self.scramble_exp_data(exp)
+    #     data = self.merge_struct_arrays(exp, sig_events)
+    #     return data, sig_events
 
-        :param exp: Experimental Data (background)
-        :param mc: Monte Carlo Data (signal)
-        :param sources: Set of sources
-        :param k: Flux scale
-        :return: Full dataset (original with added signal), and the new
-        signal events set
-        """
-        sig_events = self.generate_sig_events(sources, mc, k)
-        exp = self.scramble_exp_data(exp)
-        data = self.merge_struct_arrays(exp, sig_events)
-        return data, sig_events
-
-# ****************************************************************************************************
     def rotate(self, ra1, dec1, ra2, dec2, ra3, dec3):
         """Rotate ra1 and dec1 in a way that ra2 and dec2 will exactly map
         onto ra3 and dec3, respectively. All angles are treated as radians.
@@ -270,11 +260,9 @@ class Injector():
         ra = phi + np.pi
         return np.atleast_1d(ra), np.atleast_1d(dec)
 
-    # **************************************************************************************
     def rotate_struct(self, ev, ra, dec):
-        """Modifies the events by reassigning the ra of the events
-        Also does something to declination?
-        Removes the True Monte Carlo information from sampled events,
+        """Modifies the events by reassigning the ra and declination of the
+        events. Removes the True Monte Carlo information from sampled events,
         (ra/dec/Energy/OneWeights)
 
         :param ev: events
@@ -287,10 +275,10 @@ class Injector():
                                         ev["trueRa"], ev["trueDec"],
                                         ra, dec)
 
-        # ???????? Why reassign sindec but not dec?
         if "dec" in names:
             ev["dec"] = rot_dec
         ev["sinDec"] = np.sin(rot_dec)
+
         # "delete" Monte Carlo information from sampled events
         non_mc = [name for name in names
                   if name not in ["trueRa", "trueDec", "trueE", "ow"]]

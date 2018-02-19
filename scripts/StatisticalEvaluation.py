@@ -170,58 +170,99 @@ class Sensitivity():
         self.all_data['DetChanceFunc'] = {}
         self.all_data['DetChance'] = {}
         for k in sorted(self.all_data['test_stat_sorted'].keys()):
+
+            path = self.plot_path + "ts_" + str(k) + ".pdf"
+
+            data = self.all_data['test_stat_sorted'][k]
+
+            plt.figure()
+            plt.hist(data, bins=20, lw=2, histtype='step',color='black', label='Test Stat')
+            plt.yscale("log")
+            plt.grid()
+            plt.xlabel(r"$\lambda$")
+            plt.savefig(path)
+            plt.close()
+
             if k == 0:
                 self.all_data['DetChance'][k] = self.alpha
             else:
-                g = interp1d(self.all_data['test_stat_sorted'][k],
-                    self.all_data['cumu_dist_normed'][k],
-                    bounds_error=False, fill_value=0.)
-                f = lambda x: 1. - g(x)
-                self.all_data['DetChanceFunc'][k] = f
-                self.all_data['DetChance'][k] = f(self.TestStatThreshold)
 
-    def SensInterpoaltionFunction(self, x, a):
+                # print k,
+                # print self.all_data['test_stat_sorted'][k],
+                # print self.all_data['cumu_dist_normed'][k]
+
+                try:
+
+                    g = interp1d(self.all_data['test_stat_sorted'][k],
+                        self.all_data['cumu_dist_normed'][k],
+                        bounds_error=False, fill_value=0.)
+                    f = lambda x: 1. - g(x)
+                    self.all_data['DetChanceFunc'][k] = f
+                    self.all_data['DetChance'][k] = f(self.TestStatThreshold)
+                except ValueError:
+                    pass
+
+    def sens_interpolation_function(self, x, a):
         value = (1. - np.exp(-np.log10(a) * x)) *\
             (1. - self.alpha) + self.alpha
         return value
 
     def InterpolateDetectionChance(self, ):
-        x = np.sort(np.array(self.all_data['test_stat_sorted_all'].keys()))
-        y = np.array([self.all_data['DetChance'][k] for k in x])
-        weights = np.array([self.all_data['NTrials'][k] for k in x])
-        self.DetChanceInterpolation = interp1d(x, y, kind='linear')
+        raw_x = np.sort(np.array(self.all_data['test_stat_sorted_all'].keys()))
+        raw_y = np.array([self.all_data['DetChance'][k] for k in raw_x])
+        raw_weights = np.array([self.all_data['NTrials'][k] for k in raw_x])
+
+        mask = raw_y < 0.99
+        if (len(raw_y[mask]) > 4) and (max(raw_y[mask]) > 0.9):
+            x = raw_x[mask]
+            y = raw_y[mask]
+            weights = raw_weights[mask]
+
+        else:
+            x = raw_x
+            y = raw_y
+            weights = raw_weights
+
+        self.DetChanceInterpolation = interp1d(raw_x, raw_y, kind='linear')
+
         PolyParams = np.polyfit(x[1:], y[1:], 3, w=weights[1:])
-        self.DetChancePolyFit = lambda x: np.polyval(PolyParams, x)
+        self.DetChancePolyFit = lambda z: np.polyval(PolyParams, z)
         self.DetChanceMyFit = scp.optimize.curve_fit(
-            self.SensInterpoaltionFunction, x[1:], y[1:], sigma=1. / weights[1:]
+            self.sens_interpolation_function, x[1:], y[1:], sigma=1. / weights[1:]
         )[0]
 
     def find_sensitivity(self, ):
+
         flux_scale_min = np.min(self.all_data['test_stat_sorted_all'].keys()[:])
         flux_scale_max = np.max(self.all_data['test_stat_sorted_all'].keys())
         x = np.linspace(flux_scale_min, flux_scale_max, 1.e3)
 
         f = lambda x: self.DetChancePolyFit(x) - self.beta
         f2 = lambda x: self.DetChanceInterpolation(x) - self.beta
-        f3 = lambda x: self.SensInterpoaltionFunction(
+        f3 = lambda x: self.sens_interpolation_function(
             x, self.DetChanceMyFit) - self.beta
+
 
         if self.plotting:
             print(self.path)
+
             plt.figure()
+
             for k in self.all_data['DetChance'].keys():
                 plt.scatter(k, self.all_data['DetChance'][k], color='black')
+
             plt.plot(x, self.DetChanceInterpolation(x), lw=2,
                      color='blue', label='Interpolation')
             plt.plot(x, self.DetChancePolyFit(x), lw=2,
                      color='red', label='PolyFit')
-            plt.plot(x, self.SensInterpoaltionFunction(x, self.DetChanceMyFit),
+            plt.plot(x, self.sens_interpolation_function(x, self.DetChanceMyFit),
                      lw=2, color='black',
                      label=r'$(1-\exp(-ax))+{0:6.2f}$'.format(1. - self.alpha))
             plt.axhline(y=self.beta, lw=2)
 #            plt.grid()
             plt.xlim(flux_scale_min, flux_scale_max)
             plt.ylim(.2, 1.)
+
             try:
                 plt.axvline(x=brentq(f, flux_scale_min, flux_scale_max),
                             lw=2, color='red')
@@ -246,30 +287,35 @@ class Sensitivity():
             save_path = str(self.plot_path) + 'sens.pdf'
             save_dir = os.path.dirname(save_path)
             if not os.path.isdir(save_dir):
-                os.mkdir(save_dir)
+                os.makedirs(save_dir)
 
             plt.savefig(save_path)
-            plt.show()
+            plt.close()
 
         fits = dict()
         try:
-            fits["polynom"] = brentq(f, flux_scale_min, flux_scale_max)
+            index = np.argwhere(np.diff(
+                np.sign(f(x))) != 0).reshape(-1)[0]
+            fits["polynom"] = x[index]
+
             print('Polynom: ', fits["polynom"])
         except:
             print ('Polynom: Failed')
-            fits["polynom"] = 0.0
+            fits["polynom"] = np.nan
         try:
-            fits["interpolation"] = brentq(f2, flux_scale_min, flux_scale_max)
+            index = np.argwhere(np.diff(
+                np.sign(f2(x))) != 0).reshape(-1)[0]
+            fits["interpolation"] = x[index]
             print('Interpolation: ', fits["interpolation"])
         except:
             print ('Interpolation: Failed')
-            fits["interpolation"] = 0.0
+            fits["interpolation"] = np.nan
         try:
             fits["mine"] = brentq(f3, flux_scale_min, flux_scale_max)
             print('My Interpolation: ', fits["mine"])
         except:
             print ('My Interpolation: Failed')
-            fits["mine"] = 0.0
+            fits["mine"] = np.nan
         print ''
         return fits
 

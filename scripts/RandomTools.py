@@ -52,17 +52,11 @@ class RandomTools(object, ):
         # as a function of t
 
         t_max = self.SimTimeParameters["length"] + self.SimTimeParameters["t0"]
-        # t_max = self.SimTimeParameters["length"]
 
         t = np.linspace(t_min, t_max, 1.e4)
 
         self.InversInterpol = interp1d(
             self.IntegralNuLightCurveFunc(t), t, kind='linear')
-
-        # print t
-        # print self.IntegralNuLightCurveFunc(t)
-        # print IntegralNuLightCurveFunc(t)
-        # raw_input("prompt")
 
         # -------- Reconstruction Section --------
 
@@ -95,8 +89,6 @@ class RandomTools(object, ):
 
         self.ReconInversInterpol = interp1d(
             self.ReconIntegralNuLightCurveFunc(recon_t), recon_t, kind='linear')
-
-        # raw_input("prompt")
 
         return self.InversInterpol
 

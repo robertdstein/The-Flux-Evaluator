@@ -74,7 +74,7 @@ class LLh(PDF, Injector, RandomTools):
         self.n_select = np.nan
         self._exp = np.nan
 
-        # Sets start and end date for data taking (typo irrelevant)
+        # Sets start and end date for data taking
         self.DataStart = kwargs['StartDataTakingMJD']
         self.DataEnd = kwargs['EndDataTakingMJD']
 
@@ -82,7 +82,7 @@ class LLh(PDF, Injector, RandomTools):
         self.Livetime = kwargs['Livetime']
         self.SeasonTimeSpan = self.DataEnd - self.DataStart
 
-        # Loads "Experimental" and "Monte Carlo" data sets (in .npy format)
+        # Loads "Experimental" and "Monte Carlo" data sets (in *.npy format)
         self.exp = np.load(kwargs['ExpPath'])
         self.mc = np.load(kwargs['MCPath'])
 
@@ -118,20 +118,19 @@ class LLh(PDF, Injector, RandomTools):
         # Sets Fit Weights (True/False for fitting the weights of each)
         self.FitWeights = kwargs['FitWeights']
 
-        # Sets UseTime and Time Model (Box/BoxPre/Decay)
+        # Sets UseTime, the Time Model for simulaion, and the Time Model for
+        # reconstruction
         self.UseTime = kwargs['UseTime']
         self.SimTimeModel = kwargs['SimTimeModel']
         self.ReconTimeModel = kwargs['ReconTimeModel']
 
-        # If fitting for time
+        # If fitting for time...
         if self.UseTime:
-            # Adds a 'Discovery Delay' (10 days), which is subtracted from
+            # Adds a 'Discovery Delay' (0 days here), which is subtracted from
             # discovery date to give a conservative time window
             self.DiscDelay = 0.
             self.sources['discoverydate_mjd'] = (
                 self.sources['discoverydate_mjd'] - self.DiscDelay)
-
-# ******************************************************************************
 
             self.SimTimeLength = kwargs['SimTimeParameters']["length"]
             self.SimTimeParameters = kwargs['SimTimeParameters']
@@ -139,12 +138,10 @@ class LLh(PDF, Injector, RandomTools):
             self.ReconTimeLength = kwargs["ReconTimeParameters"]["length"]
             self.ReconTimeParameters = kwargs["ReconTimeParameters"]
 
-
-        # ****************************************************************************************************************************************
         # Sets smear Injection and MissTiming
         # Inject with wrong weight
         # MT Inject with scaled time window (longer/shorter)
-        self.SmearInjection = 0.
+        # self.SmearInjection = 0.
         # self.MissTiming = kwargs['MissTiming']
 
         # Creates empty dictionary, filled by Injector.find_and_apply_band_mask
@@ -171,10 +168,9 @@ class LLh(PDF, Injector, RandomTools):
         else:
             print('WARNING: Running in Unblinding Mode')
 
-        # ***********************************************************************
         # Sets a default of Bootstrap=False, if not provided in init
-        # Statistical Method to evaluate uncertanties
-        # Test sensitivity
+        # This is a Statistical Method to evaluate uncertainties and test
+        # sensitivity
         self.BootStrap = False
         try:
             self.BootStrap = kwargs['BootStrap']
@@ -219,8 +215,7 @@ class LLh(PDF, Injector, RandomTools):
         # Produces signal events
         self.sig_events = self.generate_sig_events(self.sources, self.mc, k, )
 
-        # ***********************************************************************
-        # If UseEnergy, then generates energy weights?
+        # If UseEnergy, then generates energy weights
         if self.UseEnergy is True:
             self.generate_sig_weight_dict_for_all_gamma(self.sig_events)
             self.generate_bkg_weight_dict_for_all_gamma(self._ev)
@@ -230,16 +225,17 @@ class LLh(PDF, Injector, RandomTools):
         self.N_all = len(self.exp) + len(self.sig_events)
         self.N = len(self._ev)
 
-        # ***********************************************************************
-        # What does this do?
+        # Calculates the background and signal PDFs
         self.evaluate_bkg()
         self.evaluate_sig()
 
+        # Calculates Signal/Background ratio (self.SoB is actually the signal
+        # PDF up to this point, to save memory)
         del self._ev
         self.SoB = self.SoB / self._ev_B
         del self._ev_B
 
-        # If UseEnergy but not FitGamma, set gamma to FixedGam
+        # If UseEnergy but not FitGamma, set gamma to FixedGamma
         if self.UseEnergy is True:
             if self.FitGamma is False:
                 gamma = self.FixedGamma
@@ -248,7 +244,7 @@ class LLh(PDF, Injector, RandomTools):
                     self.weight_fast(gamma, self.w_cache_Sig))
 
     def init_everything_for_multiple_trials(self, ):
-        """Initialises all attributes which need to be calculated once for
+        """Initialises all attributes which need to be calculated just once for
         all trials. Scrambles/randomises the experimental data, creates a
         spatial pdf for the background and assigns weight distances. Also
         produces optional Energy PDFs and Time weights, if required.
@@ -301,8 +297,8 @@ class LLh(PDF, Injector, RandomTools):
         N = self.N
         SoB = self.SoB
 
-        # If using Energy, finds gamma and the remaining parameters
-        # Calculates the Signal/background ratio for
+        # If using Energy, finds gamma and calculates the energy weight
+        # Otherwise gives a weight of 1
         if self.UseEnergy is True:
             n = params[:-1]
             gamma = params[-1]
@@ -313,14 +309,19 @@ class LLh(PDF, Injector, RandomTools):
             n = params[:]
             w = 1.
 
-        n *= self.SeasonWeight
+        # print "n", n, "season weight", self.SeasonWeight
+
+        n = n * self.SeasonWeight
+
         b = self.sources['weight'][:, None]
 
         # If not fitting weights, use array. Otherwise, use matrix.
+        # Multiplies energy weights by source weights (spatial and time)
         if self.FitWeights is False:
             y = np.sum(numexpr.evaluate('(b * SoB)'), axis=0)
             a = numexpr.evaluate('n * (w*y-1.)')
             del w
+
         if self.FitWeights is True:
             y = numexpr.evaluate('SoB')
             c = np.matrix(numexpr.evaluate('w*SoB-1.'))
@@ -330,15 +331,21 @@ class LLh(PDF, Injector, RandomTools):
 
         llh_value = numexpr.evaluate('log1p(a / N_all)')
 
+        # print a, len(a)
+
         # Make sure to delete variables from memory
         del SoB
         del y
         del a
 
+        # Calculates llh, accounting for whether a box is used or not
         if self.UseBox is True:
             llh_value = llh_value.sum() + (N_all - N) * np.log1p(-n / N_all)
         else:
             llh_value = llh_value.sum()
+
+        # print llh_value
+        # raw_input("prompt")
 
         # Definition of test statistic
         return 2. * llh_value

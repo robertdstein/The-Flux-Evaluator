@@ -99,7 +99,6 @@ class PDF():
 # Energy Part
 # ==============================================================================
 
-    # **************************************************************************
     def weight(self, data, exp, mc, gamma):
         """Calculates the Signal/Background function.
         Uses Finite Difference Methods to calculate 1st/2nd derivatives.
@@ -301,6 +300,7 @@ class PDF():
             log_e_bin_center, sin_dec_bin_center, np.log(ratio),
             kx=log_e_order, ky=log_e_order, s=0)
         self.EnergyPDFSplineInterpolated = spline
+
         return spline
 
     def create_energy_hist_for_splines(self, sin_dec, log_e, weights, ):
@@ -323,6 +323,7 @@ class PDF():
         norms = np.sum(h, axis=ndim - 2)
         norms[norms == 0.] = 1.
         h /= norms
+
         return h
 
 # ==============================================================================
@@ -401,13 +402,14 @@ class PDF():
 
         :param source: Source
         :param data: Data
-        :return: Spatial + Time PDF value
+        :return: Spatial * Time PDF value
         """
         space_term = self.space_pdf_signal(source, data, )
         if self.UseTime is True:
             time_term = self.time_pdf_signal(source, data, )
         else:
             time_term = np.ones_like(space_term)
+
         return space_term * time_term
 
     def evaluate_sig(self):
@@ -447,6 +449,8 @@ class PDF():
             source['weight_time'] = max(season_norm / self.SeasonTimeSpan, 0.)
             source['TimeNorm'] = max(season_norm / total_norm, 0.)
 
+            print source['weight_time'], source['TimeNorm'], season_norm
+
             # # Calculates for a box beginning TimeBoxLength before discovery
             # # and continuing until discovery.
             # if self.ReconTimeModel == 'BoxPre':
@@ -465,19 +469,19 @@ class PDF():
             #     source['TimeNorm'] = max(time_length_in_seasons / tot_norm, 0.)
 
             # Calculates for for an arbitrary exponential decay model
-            if self.ReconTimeModel == 'Decay':
-                t_pp = self.ReconModelParameters["t_pp"]
-                t_start = max(
-                    0., self.DataStart - (source['discoverydate_mjd']))
-                t_end = min(self.ReconTimeLength,
-                    max((self.DataEnd - source['discoverydate_mjd']), 0.))
-                tot_norm = t_pp * (
-                    np.log(self.ReconTimeLength + t_pp) - np.log(0. + t_pp))
-                SeasonNorm = t_pp * (
-                    np.log(t_end + t_pp) - np.log(t_start + t_pp))
-                source['TimeNorm'] = SeasonNorm / tot_norm
-                source['weight_time'] = (
-                    (source['TimeNorm'] * tot_norm) / self.SeasonTimeSpan)
+            # if self.ReconTimeModel == 'Decay':
+            #     t_pp = self.ReconModelParameters["t_pp"]
+            #     t_start = max(
+            #         0., self.DataStart - (source['discoverydate_mjd']))
+            #     t_end = min(self.ReconTimeLength,
+            #         max((self.DataEnd - source['discoverydate_mjd']), 0.))
+            #     tot_norm = t_pp * (
+            #         np.log(self.ReconTimeLength + t_pp) - np.log(0. + t_pp))
+            #     SeasonNorm = t_pp * (
+            #         np.log(t_end + t_pp) - np.log(t_start + t_pp))
+            #     source['TimeNorm'] = SeasonNorm / tot_norm
+            #     source['weight_time'] = (
+            #         (source['TimeNorm'] * tot_norm) / self.SeasonTimeSpan)
 
     def single_time_pdf(self, t, source):
         """Processes the array of event times (in mjd). Checks if there is

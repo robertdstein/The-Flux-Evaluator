@@ -8,11 +8,8 @@ arbitrary number of sources.
 
 import numpy as np
 
-root = "/afs/ifh.de/user/s/steinrob/scratch/PS_Data/Catalogue/"
-
-
 def read_in_catalogue():
-    """Produces a catalogue with a single source.
+    """Produces a catalogue with a single source_path.
 
     :return: Source Array
     """
@@ -27,20 +24,19 @@ def read_in_catalogue():
                   ])
 
     sources['ra'] = np.array([np.deg2rad(180.)])
-    sources['dec'] = np.arcsin(0.99)
+    sources['dec'] = np.arcsin(-0.95)
     sources['flux'] = np.array([1.e-9])
     sources['weight'] = np.array([1.0])
     sources['distance'] = np.array([1.0])
     sources['discoverydate_mjd'] = (
         np.array([55800.4164699]) )
     sources['name'] = 'SN_01'
+    sources["n_exp"] = 0.0
+    sources["weight_acceptance"] = 0.0
+    sources["weight_time"] = 0.0
+    sources["weight_distance"] = 0.0
 
     return sources
-
-# Saves a single-source catalogue
-single_source_array = read_in_catalogue()
-np.save(root + "catalogue00.npy", single_source_array)
-
 
 def read_in_catalogue_stack(n_sources):
     """Produces a catalogue of n sources. Attributes are randomised within
@@ -77,7 +73,13 @@ def read_in_catalogue_stack(n_sources):
 
     return sources
 
-# Saves an n-source catalogue
-n = 10
-n_source_array = read_in_catalogue_stack(n)
-np.save(root + "catalogue_stack" + str(n) + ".npy", n_source_array)
+if __name__ == '__main__':
+    
+    # Saves a single-source_path catalogue
+    single_source_array = read_in_catalogue()
+    np.save(root + "catalogue00.npy", single_source_array)
+
+    # Saves an n-source_path catalogue
+    n = 10
+    n_source_array = read_in_catalogue_stack(n)
+    np.save(root + "catalogue_stack" + str(n) + ".npy", n_source_array)

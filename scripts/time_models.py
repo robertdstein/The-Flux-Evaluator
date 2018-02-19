@@ -19,8 +19,9 @@ def box_func_dict(parameters):
     :return: Dictionary
     """
     box_dict = dict()
-    box_dict["model_start"] = 0 + parameters["t0"]
-    box_dict["model_end"] = parameters["length"] + parameters["t0"]
+    box_dict["model_start"] = 0. + float(parameters["t0"])
+    box_dict["model_end"] = (
+        float(parameters["length"]) + float(parameters["t0"]))
     box_dict["tot_norm"] = float(parameters["length"])
     return box_dict
 
@@ -63,7 +64,16 @@ def box_func_integrated(t, parameters):
     mask = np.logical_and(
         t >= box_dict["model_start"],
         t <= box_dict["model_end"])
-    r[mask] = (t[mask] - parameters["t0"]) / norm
+
+    # r = np.zeros_like(t)
+    # r[t > parameters["length"]] = np.ones_like(t[t > parameters["length"]])
+    # mask = np.logical_and(
+    #     t >= 0,
+    #     t <= parameters["length"])
+
+    r[mask] = (t[mask]-box_dict["model_start"]) / norm
+
+    # print t, t-box_dict["model_start"], parameters["length"], r, mask
 
     return r
 
@@ -204,6 +214,8 @@ if __name__ == '__main__':
     # If this script is simply run directly, it will produce plots of both
     # the time PDFs and their integral functions
 
+    import os
+
     import matplotlib
 
     matplotlib.use('Agg')
@@ -217,12 +229,13 @@ if __name__ == '__main__':
     ax3 = plt.subplot(313)
     ax3.set_title("Approximated Integral of Time PDF")
 
-    t_range = np.linspace(0, 300, 301)
-    parameters = {
-        "t0": 100,
+    t_range = np.linspace(-150, 150, 301)
+    parameters ={
+        "t0": -100,
         "length" : 100,
-        "t_pp" : 0.1,
+        "t_pp" : 1.0,
     }
+
     for model in ["Box", "Decay"]:
         ax1.plot(
             t_range,
@@ -247,6 +260,66 @@ if __name__ == '__main__':
 
     fig.set_size_inches(8, 12)
 
-    root = "/afs/ifh.de/user/s/steinrob/Desktop/python/stacking/"
-    plt.savefig(root + "plots/time_PDFs.pdf")
+    root = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
+    path = root + "plots/time_PDFs/all_PDFs.pdf"
+
+    if not os.path.isdir(os.path.dirname(path)):
+        os.mkdir(os.path.dirname(path))
+
+    plt.savefig(root + "plots/time_PDFs/all_PDFs.pdf")
     plt.close()
+
+    graphs = {
+        "perfect": {
+            "t0": -100,
+            "length": 100,
+            "t_pp": 2.0 },
+        "misaligned": {
+            "t0": -50,
+            "length": 100,
+            "t_pp": 2.0 },
+        "scaled": {
+            "t0": -100,
+            "length": 50,
+            "t_pp": 2.0},
+        "both": {
+            "t0": -50,
+            "length": 200,
+            "t_pp": 2.0 }
+    }
+
+    for sim_model in ["Box", "Decay"]:
+
+        for recon_model in ["Box", "Decay"]:
+
+            for name, parameters in graphs.iteritems():
+                fig = plt.figure()
+
+                ax1 = plt.subplot(211)
+                ax2 = plt.subplot(212, sharex=ax1)
+
+                x = np.linspace(-150, 150, 3001)
+
+                y1 = return_light_curve(t_range, sim_model, graphs["perfect"])
+                y2 = return_light_curve(t_range, recon_model, parameters)
+
+                ax1.fill_between(t_range, 0, y1, facecolor="blue")
+
+                ax2.fill_between(t_range, 0, y2, facecolor="red")
+
+                ax1.set_ylim(0, 1.2 * max(y1 + y2))
+                ax2.set_ylim(0, 1.2 * max(y1 + y2))
+                fig.subplots_adjust(hspace=0)
+                ax2.invert_yaxis()
+                plt.xlabel("Time (days)")
+                ax2.set_ylabel("Recon PDF")
+                ax1.set_ylabel("Emission PDF")
+
+                ax1.get_xaxis().set_visible(False)
+
+                fig.set_size_inches(8, 6)
+                plt.savefig(
+                    root + "plots/time_PDFs/" + sim_model + "_" +
+                    recon_model + "_" + name + ".png")
+                plt.close()
+

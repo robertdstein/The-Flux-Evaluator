@@ -30,6 +30,36 @@ class GenerationControl(object, ):
         self.settings = settings
         self.seasons = []
 
+        # **********************************************************************
+        # Sets tmp directory (currently Alex's)
+        try:
+            tmpdir = os.environ['TMPDIR']
+        except KeyError:
+            # tmpdir ="/afs/ifh.de/user/s/steinrob/scratch/PS_Data"
+            tmpdir = "/afs/ifh.de/user/a/astasik/scratch/PS_Data/"
+
+        try:
+            # Reads in the config variables for each season of data
+            data_conf = ConfigParser.ConfigParser()
+            data_conf.read(self.settings["DataConfig"])
+
+            # Loops over each season, creating an LLh Object.
+            # The data is randomised, and the LLh function is spline-fitted.
+            for season in data_conf.sections():
+                new_instance = LLh(
+                    ExpPath=tmpdir + data_conf.get(season, "exp_path"),
+                    MCPath=tmpdir + data_conf.get(season, "mc_path"),
+                    AcceptanceWeightPath=tmpdir + data_conf.get(season, "aw_path"),
+                    Livetime=eval(data_conf.get(season, "livetime")),
+                    StartDataTakingMJD=float(data_conf.get(season, "start_mjd")),
+                    EndDataTakingMJD=float(data_conf.get(season, "end_mjd")),
+                    **self.settings)
+                new_instance.init_everything_for_multiple_trials()
+                self.seasons.append(new_instance)
+
+        except KeyError:
+            pass
+
     def generate_test_statistics(self, k=0, n_trials=10, path='test.pkl',
                                  seed=np.nan, **kwargs):
         """Creates the custom path for the given seed and k value
@@ -83,37 +113,11 @@ class GenerationControl(object, ):
         """
         test_stats = []
 
-        # **********************************************************************
-        # Sets tmp directory (currently Alex's)
-        try:
-            tmpdir = os.environ['TMPDIR']
-        except KeyError:
-            # tmpdir ="/afs/ifh.de/user/s/steinrob/scratch/PS_Data"
-            tmpdir = "/afs/ifh.de/user/a/astasik/scratch/PS_Data/"
-
         # Gives the memory usage
         print 0, 'Memory usage: %s (Gb)' % self.memory_usage_ps()
         memory_use = str(float(resource.getrusage(
             resource.RUSAGE_SELF).ru_maxrss) / 1.e6)
         print 'Memory usage max: %s (Gb)' % memory_use
-
-        # Reads in the config variables for each season of data
-        data_conf = ConfigParser.ConfigParser()
-        data_conf.read(self.settings["DataConfig"])
-
-        # Loops over each season, creating an LLh Object.
-        # The data is randomised, and the LLh function is spline-fitted.
-        for season in data_conf.sections():
-            new_instance = LLh(
-                ExpPath=tmpdir + data_conf.get(season, "exp_path"),
-                MCPath=tmpdir + data_conf.get(season, "mc_path"),
-                AcceptanceWeightPath=tmpdir + data_conf.get(season, "aw_path"),
-                Livetime=eval(data_conf.get(season, "livetime")),
-                StartDataTakingMJD=float(data_conf.get(season, "start_mjd")),
-                EndDataTakingMJD=float(data_conf.get(season, "end_mjd")),
-                **self.settings)
-            new_instance.init_everything_for_multiple_trials()
-            self.seasons.append(new_instance)
 
         # Loops over n_trials
         for counter in range(n_trials):
@@ -121,11 +125,11 @@ class GenerationControl(object, ):
             self.print_progress(counter, n_trials)
 
             # Loops over seasons to create each season's LLh function
-            funcs = []
+            llh_funcs = []
             for season in self.seasons:
                 season.prepare_fake_data_set_and_evaluate_pdf(k, )
                 f = season.ProduceLLhFunction()
-                funcs.append(f)
+                llh_funcs.append(f)
 
             def f_final(x):
                 """The likelihood function to be minimised, given the Ice
@@ -137,6 +141,11 @@ class GenerationControl(object, ):
                 :return: The combined Log Likelihood for all included seasons,
                 given parameter set x
                 """
+
+                NSignalTotal = 0.
+
+                params = []
+
                 # Loops over each season of data
                 for season in self.seasons:
                     # If both "UseEnergy" and "FitGamma" are true,
@@ -147,6 +156,9 @@ class GenerationControl(object, ):
                         gamma = x[-1]
                     else:
                         gamma = season.InjectionGamma
+                        p = np.array(x)
+                        p = np.append(p, gamma)
+                        params.append(p)
 
                     # Sets the source acceptance
                     for source in season.sources:
@@ -171,6 +183,10 @@ class GenerationControl(object, ):
                         season.sources['weight_time'] *
                         season.sources['weight_acceptance'])
 
+                    NSignalTotal += np.sum(season.sources['weight'])
+
+                # print x
+
                 # Puts the weights into a matrix
                 WeightMatrix = np.zeros(
                     (len(self.seasons), len(self.seasons[0].sources)),
@@ -178,7 +194,8 @@ class GenerationControl(object, ):
                 for i, season in enumerate(self.seasons):
                     WeightMatrix[i] = season.sources['weight']
 
-                # If the weights are not to be fitted,
+                # If the weights are not to be fitted, assign a weight of 1
+                # to events which lie outside the seasons, and renormalise
                 if self.settings['FitWeights'] is False:
                     norm = np.sum(WeightMatrix, axis=1)[:, None]
                     for i, n in enumerate(norm):
@@ -192,7 +209,13 @@ class GenerationControl(object, ):
                 # If weights are to be fitted,
                 if self.settings['FitWeights'] is True:
                     SourceWeights = np.ones_like(WeightMatrix)
-                    SeasonWeights = WeightMatrix / np.sum(WeightMatrix, axis=0)
+                    norm = np.sum(WeightMatrix, axis=0)
+                    altSeasonWeights = np.zeros_like(WeightMatrix)
+                    for i, n in enumerate(norm):
+                        if n > 0:
+                            altSeasonWeights[:, i] = WeightMatrix[:, i] / n
+                    # SeasonWeights = WeightMatrix / np.sum(WeightMatrix, axis=0)
+                    SeasonWeights = altSeasonWeights
 
                 # Loops over seasons to assign weights
                 for i, season in enumerate(self.seasons):
@@ -201,11 +224,21 @@ class GenerationControl(object, ):
 
                 # Loops over each LLh function to give overall LLh
                 value = 0.0
-                for f in funcs:
-                    value += f(x)
+                # print "LLH values:"
+                for j, f in enumerate(llh_funcs):
+
+                    if np.logical_and(self.settings['UseEnergy'] is True,
+                                      self.settings['FitGamma'] is False):
+                        y = np.array(params[j])
+                    else:
+                        y = np.array(x)
+
+                    value += f(y)
+
                 return value
 
             test_stat_res = self.minimise_llh(f_final)
+
             test_stats.append(test_stat_res)
             del f_final
 
@@ -240,7 +273,8 @@ class GenerationControl(object, ):
                     bounds = [(0., 1000.) for i in range(n_sources)] + \
                              [(1., 4.)]
                     res = scp.optimize.fmin_l_bfgs_b(
-                        f_final, seed, bounds=bounds, approx_grad=True)
+                        f_final, seed, bounds=bounds, approx_grad=True,
+                    )
 
                 if self.settings['FitGamma'] is False:
                     seed = np.ones(n_sources)
@@ -292,7 +326,7 @@ class GenerationControl(object, ):
         test_stat_results = pickle.load(pkl_file)
         pkl_file.close()
 
-        # Either creates
+        # Either creates a new key, or adds results to existing key entry
         if k in test_stat_results.keys():
             test_stat_results[k] = np.append(test_stat_results[k], test_stats)
         else:
@@ -364,8 +398,6 @@ class GenerationControl(object, ):
         # Creates an empty Pickle Path for results
         if os.path.isfile(output_path):
             os.remove(output_path)
-
-
 
         # Returns a list of all files matching the path given
         file_list = glob.glob(data_path + '__*.pkl')

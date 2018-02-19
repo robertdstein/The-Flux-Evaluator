@@ -5,8 +5,8 @@
 ##
 ##(the running time for this job)
 
-#$ -l h_cpu=00:29:00
-#$ -l h_rss=8G
+#$ -l h_cpu=00:59:00
+#$ -l h_rss=5G
 ##
 ##Force OS = SL5/6
 #$ -l os=sl6
@@ -35,7 +35,7 @@ cp -R /afs/ifh.de/user/a/astasik/scratch/PS_Data/DeclinationAcceptance $TMPDIR
 
 eval $(/cvmfs/icecube.opensciencegrid.org/py2-v2/setup.sh)
 
-$SROOT/metaprojects/offline-software/V16-10-00/env-shell.sh python /afs/ifh.de/user/s/steinrob/Desktop/python/stacking/RunLocal.py -c $1 -f $2 -n $3 -s $4
+$SROOT/metaprojects/offline-software/V16-10-00/env-shell.sh python /afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/RunLocal.py -c $1 -f $2 -n $3 -s $4
 
-cp $TMPDIR/${JOB_ID}_stdout.txt /afs/ifh.de/user/s/steinrob/Desktop/python/stacking/logs
-cp $TMPDIR/${JOB_ID}_stderr.txt /afs/ifh.de/user/s/steinrob/Desktop/python/stacking/logs
+cp $TMPDIR/${JOB_ID}_stdout.txt /afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/logs
+cp $TMPDIR/${JOB_ID}_stderr.txt /afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/logs

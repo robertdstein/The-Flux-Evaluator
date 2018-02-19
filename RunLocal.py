@@ -26,6 +26,7 @@ import os
 import argparse
 import ConfigParser
 from scripts.GenerationControl import GenerationControl
+from common import root_path, source_path, results_path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--config", default="Fast_with_fit",
@@ -37,11 +38,10 @@ parser.add_argument("-s", "--step", default=15, help="Number of flux steps")
 
 cfg = parser.parse_args()
 
-# Sets the root directory containing scripts and config files/subdirectories
-root = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
+source_path = source_path
 
 conf = ConfigParser.ConfigParser()
-config_path = root + cfg.conf_file
+config_path = source_path + cfg.conf_file
 
 if os.path.isfile(config_path):
     conf.read(config_path)
@@ -59,7 +59,7 @@ else:
     np.random.seed(seed)
 
     # Finds, from the given configuration, which data_config file is to be used
-    data_conf_dir = root + "data_configs/" + conf.get(cfg.config, "DataConfig")
+    data_conf_dir = source_path + "data_configs/" + conf.get(cfg.config, "DataConfig")
     print data_conf_dir
 
     # Read in parameters from the config file
@@ -83,13 +83,9 @@ else:
 
     GenerationControlInstance = GenerationControl(settings)
 
-    # Sets path to save output pickle files
-    path = "/afs/ifh.de/user/s/steinrob/scratch/stacking_dump/results"
-
     # Selects a range of flux scales, for later use in Sensitivity graphs
     # The maximum value should be given in the ConfigFile as MaxK
     k_values = np.linspace(0.0, float(conf.get(cfg.config, "MaxK")), cfg.step)
-    # k_values = [0.8]
 
     # Ensures that, if run over a cluster that can crash, a uniform
     # distribution over k values is sampled
@@ -103,6 +99,6 @@ else:
         print i
         seed += 1
         GenerationControlInstance.generate_test_statistics(
-            k=i, n_trials=n_trials, path=path, seed=seed)
+            k=i, n_trials=n_trials, path=results_path, seed=seed)
         print ''
         print '---------------------'
