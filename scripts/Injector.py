@@ -30,17 +30,17 @@ class Injector():
         return sig_events
 
     def find_and_apply_band_mask(self, source, mc, dec_bandwidth):
-        """For a given source, creates a mask to include only Monte Carlo
+        """For a given source_path, creates a mask to include only Monte Carlo
         events which lie in a declination band, of width 10 degrees, centered
-        on the source.
+        on the source_path.
 
-        :param source: Single source
+        :param source: Single source_path
         :param mc: Monte Carlo data (signal)
         :param dec_bandwidth: Width of declination band (in radians)
         :return: Returns Monte Carlo events in the band,
         the solid angle coverage, and the mask for the band.
         """
-        # Sets a declination band 5 degrees above and below each source
+        # Sets a declination band 5 degrees above and below each source_path
         min_dec = max(-np.pi / 2., source['dec'] - dec_bandwidth)
         max_dec = min(np.pi / 2., source['dec'] + dec_bandwidth)
         # Gives the solid angle coverage of the sky for the band
@@ -50,7 +50,7 @@ class Injector():
         if self._ReturnInjectorNExp:
             self.InjectionBandMask = dict()
 
-        # Checks if the source mask has already been evaluated.
+        # Checks if the source_path mask has already been evaluated.
         # If not, creates a mask for MC events lying in the band.
         if source['name'] in self.InjectionBandMask.keys():
             band_mask = self.InjectionBandMask[source['name']]
@@ -62,8 +62,8 @@ class Injector():
 
     def extract_events_from_mc(self, sources, mc, ):
         """Randomises a set of Monte Carlo data for a given set of sources.
-        For each source, selects only those events lying in a declination
-        band centered on the source.
+        For each source_path, selects only those events lying in a declination
+        band centered on the source_path.
 
         :param sources: list of sources
         :param mc: Monte Carlo (signal)
@@ -85,7 +85,7 @@ class Injector():
         # Loops over sources to add in expected number of neutrinos
         for source in sources:
 
-            # Checks to see if source is actually overlapping a given season
+            # Checks to see if source_path is actually overlapping a given season
 
             if self.UseTime is True:
                 if not source['weight_time'] > 0.0:
@@ -136,14 +136,14 @@ class Injector():
             # Creates an array with n_signal entries.
             # Each entry is a random integer between 0 and no. of sources.
             # The probability for each integer is equal to the OneWeight of
-            # the corresponding source.
+            # the corresponding source_path.
             ind = np.random.choice(len(SourceMC['ow']), size=n_signal,
                                    p=p_select)
 
             # Selects the sources corresponding to the random integer array
             sam_ev = SourceMC[ind]
 
-            # Rotates the Monte Carlo events onto the source
+            # Rotates the Monte Carlo events onto the source_path
             sam_ev = self.rotate_struct(sam_ev, source['ra'], source['dec'])
 
             # Generates random numbers according to Time profile
@@ -228,7 +228,7 @@ class Injector():
         """Rotate ra1 and dec1 in a way that ra2 and dec2 will exactly map
         onto ra3 and dec3, respectively. All angles are treated as radians.
         Essentially rotates the events, so that they behave as if they were
-        originally incident on the source.
+        originally incident on the source_path.
 
         :param ra1: Event Right Ascension
         :param dec1: Event Declination
@@ -251,7 +251,7 @@ class Injector():
             hp.rotator.get_rotation_matrix((dp, -dz, 0.))[0], z, p)
             for z, p, dz, dp in zip(zen1, phi1, zen2, phi2)])
 
-        # Rotate **all** these vectors towards ra3, dec3 (source)
+        # Rotate **all** these vectors towards ra3, dec3 (source_path)
         zen, phi = hp.rotator.rotateDirection(np.dot(
             hp.rotator.get_rotation_matrix((-phi3, 0, 0))[0],
             hp.rotator.get_rotation_matrix((0, zen3, 0.))[0]), x[:, 0], x[:, 1])

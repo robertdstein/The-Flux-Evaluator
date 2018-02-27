@@ -86,7 +86,7 @@ class LLh(PDF, Injector, RandomTools):
         self.exp = np.load(kwargs['ExpPath'])
         self.mc = np.load(kwargs['MCPath'])
 
-        # Loads sources from the given source path
+        # Loads sources from the given source_path results_path
         # Adds field to numpy array
         self._sources2 = np.load(kwargs['SourcePath'])
         self._sources = np.lib.recfunctions.append_fields(
@@ -258,7 +258,7 @@ class LLh(PDF, Injector, RandomTools):
         bckg_spline_space = self.create_space_bkg_pdf(self._ev)
         self.bckg_spline_space = bckg_spline_space
 
-        # Assigns a weight to each source, equal to 1/(r^2) for distance r
+        # Assigns a weight to each source_path, equal to 1/(r^2) for distance r
         self.sources['weight_distance'] = self.sources['distance']**(-2.)
 
         # If accounting for energy, produces Energy PDFs
@@ -267,7 +267,7 @@ class LLh(PDF, Injector, RandomTools):
             self.generate_spline_dict_for_all_gamma(self.exp, self.mc)
             self.generate_bkg_weight_dict_for_all_gamma(self._ev)
 
-        # If using time, calculates Time weights for the source
+        # If using time, calculates Time weights for the source_path
         if self.UseTime is True:
             self.compute_source_weights_time()
             self.init_random_generator_pdf()
@@ -316,7 +316,7 @@ class LLh(PDF, Injector, RandomTools):
         b = self.sources['weight'][:, None]
 
         # If not fitting weights, use array. Otherwise, use matrix.
-        # Multiplies energy weights by source weights (spatial and time)
+        # Multiplies energy weights by source_path weights (spatial and time)
         if self.FitWeights is False:
             y = np.sum(numexpr.evaluate('(b * SoB)'), axis=0)
             a = numexpr.evaluate('n * (w*y-1.)')

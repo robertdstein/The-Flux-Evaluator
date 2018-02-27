@@ -7,6 +7,9 @@ import glob
 import ConfigParser
 import subprocess
 
+import sys
+sys.path.append('..')
+
 from sys import stdout
 
 import resource
@@ -16,7 +19,6 @@ import scipy.optimize
 import scipy as scp
 
 from scripts.LLh import LLh
-
 
 class GenerationControl(object, ):
 
@@ -30,39 +32,48 @@ class GenerationControl(object, ):
         self.settings = settings
         self.seasons = []
 
-        # **********************************************************************
-        # Sets tmp directory (currently Alex's)
         try:
-            tmpdir = os.environ['TMPDIR']
-        except KeyError:
-            # tmpdir ="/afs/ifh.de/user/s/steinrob/scratch/PS_Data"
-            tmpdir = "/afs/ifh.de/user/a/astasik/scratch/PS_Data/"
 
-        try:
             # Reads in the config variables for each season of data
             data_conf = ConfigParser.ConfigParser()
             data_conf.read(self.settings["DataConfig"])
 
-            # Loops over each season, creating an LLh Object.
-            # The data is randomised, and the LLh function is spline-fitted.
-            for season in data_conf.sections():
-                new_instance = LLh(
-                    ExpPath=tmpdir + data_conf.get(season, "exp_path"),
-                    MCPath=tmpdir + data_conf.get(season, "mc_path"),
-                    AcceptanceWeightPath=tmpdir + data_conf.get(season, "aw_path"),
-                    Livetime=eval(data_conf.get(season, "livetime")),
-                    StartDataTakingMJD=float(data_conf.get(season, "start_mjd")),
-                    EndDataTakingMJD=float(data_conf.get(season, "end_mjd")),
-                    **self.settings)
-                new_instance.init_everything_for_multiple_trials()
-                self.seasons.append(new_instance)
+            # **********************************************************************
+            # **********************************************************************
+            # Sets tmp directory (currently Alex's)
+
+            try:
+                # Loops over each season, creating an LLh Object.
+                # The data is randomised, and the LLh function is spline-fitted.
+                for season in data_conf.sections():
+
+                    try:
+                        data_dir = os.environ['TMPDIR']
+                    except KeyError:
+                        # tmpdir ="/afs/ifh.de/user/s/steinrob/scratch/PS_Data"
+                        data_dir = data_conf.get(season, "data_dir")
+
+                    new_instance = LLh(
+                        ExpPath=data_dir + data_conf.get(season, "exp_path"),
+                        MCPath=data_dir + data_conf.get(season, "mc_path"),
+                        AcceptanceWeightPath=data_dir + data_conf.get(season, "aw_path"),
+                        Livetime=eval(data_conf.get(season, "livetime")),
+                        StartDataTakingMJD=float(data_conf.get(season, "start_mjd")),
+                        EndDataTakingMJD=float(data_conf.get(season, "end_mjd")),
+                        **self.settings)
+                    new_instance.init_everything_for_multiple_trials()
+                    self.seasons.append(new_instance)
+
+            except KeyError:
+                pass
 
         except KeyError:
             pass
 
+
     def generate_test_statistics(self, k=0, n_trials=10, path='test.pkl',
                                  seed=np.nan, **kwargs):
-        """Creates the custom path for the given seed and k value
+        """Creates the custom results_path for the given seed and k value
         Generates n_trials and writes results to a pickle file.
 
         :param k: Flux Scale
@@ -79,18 +90,26 @@ class GenerationControl(object, ):
             self.seed = seed
         np.random.seed(self.seed)
 
-        # Sets the save path for the pickle file, Generates the trials for
+        # Sets the save results_path for the pickle file, Generates the trials for
         # the given flux scale, and saves the pickle results file
         path += "_" + self.settings["ConfigName"]
-        path += '__' + str(k) + '_' + str(self.seed) + '.pkl'
+        end_path = '__' + "{0:.2G}".format(k) + '_' + str(self.seed) + \
+                   '.pkl'
+
+        ts_path = path + "_TS_" + end_path
+        fit_param_path = path + "_params_" + end_path
+        fit_status_path = path + "_convergence_" + end_path
 
         # Checks the Pickle Directory exists, and if not, creates it
-        results_dir = os.path.dirname(path)
+        results_dir = os.path.dirname(ts_path)
         if not os.path.isdir(results_dir):
             os.makedirs(results_dir)
 
-        test_stats = self.generate_trials(n_trials, k=k, )
-        self.write_result_to_file(path, k, test_stats)
+        test_stats, fit_params, fit_status = self.generate_trials(n_trials,
+                                                                 k=k, )
+        self.write_result_to_file(ts_path, k, test_stats)
+        self.write_result_to_file(fit_param_path, k, fit_params)
+        self.write_result_to_file(fit_status_path, k, fit_status)
 
     def memory_usage_ps(self, ):
         """Returns the memory usage."""
@@ -112,6 +131,8 @@ class GenerationControl(object, ):
         :return: Test statistics result
         """
         test_stats = []
+        fit_params = []
+        fit_status = []
 
         # Gives the memory usage
         print 0, 'Memory usage: %s (Gb)' % self.memory_usage_ps()
@@ -160,7 +181,7 @@ class GenerationControl(object, ):
                         p = np.append(p, gamma)
                         params.append(p)
 
-                    # Sets the source acceptance
+                    # Sets the source_path acceptance
                     for source in season.sources:
                         source['weight_acceptance'] = season.AcceptanceFitFunc(
                             source['dec'], gamma)
@@ -177,11 +198,17 @@ class GenerationControl(object, ):
                         season.sources['weight_time'] = np.ones_like(
                             season.sources['weight_time'])
 
-                    # Assigns an overall source weight
+                    # Assigns an overall source_path weight
                     season.sources['weight'] = (
                         season.sources['weight_distance'] *
                         season.sources['weight_time'] *
                         season.sources['weight_acceptance'])
+
+                    # for source_path in season.sources:
+                    #     for field in source_path.dtype.fields:
+                    #         print field, source_path[field], " ",
+                    #     print "\n"
+                    # raw_input("prompt")
 
                     NSignalTotal += np.sum(season.sources['weight'])
 
@@ -237,15 +264,26 @@ class GenerationControl(object, ):
 
                 return value
 
-            test_stat_res = self.minimise_llh(f_final)
+            res = self.minimise_llh(f_final)
 
+            flag = res[2]["warnflag"]
+            # if flag > 0:
+            #     print res[2]
+            #     raw_input("prompt")
+
+            test_stat_res = -res[1]
             test_stats.append(test_stat_res)
+
+            fit_params.append(res[0])
+            fit_status.append(flag)
             del f_final
+
+        fit_params = np.matrix(fit_params)
 
         # Ensures cluster cache is not full
         for season in self.seasons:
             del season.SoB
-        return np.array(test_stats)
+        return np.array(test_stats), fit_params, np.array(fit_status)
 
     def minimise_llh(self, f_final):
         """Minimises the Log Likelihood Function using scipy optimize,
@@ -262,7 +300,7 @@ class GenerationControl(object, ):
         # Then minimises for the chosen configuration
         # Provides appropriate bounds the chosen configuration
 
-        # If fit weights loops over a bound for each source!
+        # If fit weights loops over a bound for each source_path!
         # If not, then gives only one set of bound
 
         if self.settings['FitWeights'] is True:
@@ -274,6 +312,7 @@ class GenerationControl(object, ):
                              [(1., 4.)]
                     res = scp.optimize.fmin_l_bfgs_b(
                         f_final, seed, bounds=bounds, approx_grad=True,
+                        epsilon=0.01
                     )
 
                 if self.settings['FitGamma'] is False:
@@ -307,9 +346,9 @@ class GenerationControl(object, ):
                     f_final, [1.], bounds=[(0., 1000.)], approx_grad=True)
 
         # Returns a value for LLH at minimum
-        test_stat_res = -res[1]
+        # test_stat_res = -res[1]
 
-        return test_stat_res
+        return res
 
     def write_result_to_file(self, path, k, test_stats):
         """Adds information to a pickle file, and saves it.
@@ -341,7 +380,7 @@ class GenerationControl(object, ):
         """Checks if the pickle file exists.
         If not, creates an empty pickle file.
 
-        :param path: pickle file path
+        :param path: pickle file results_path
         """
         if os.path.isfile(path):
             pass
@@ -355,7 +394,7 @@ class GenerationControl(object, ):
         """Loads the pickle results file.
         Prints the number of entries for each flux.
 
-        :param path: Pickle File path
+        :param path: Pickle File results_path
         """
         self.check_if_pkl_file_exists(path)
         with open(path, 'rb') as pkl_file:
@@ -375,10 +414,10 @@ class GenerationControl(object, ):
         stdout.write("\r%.1f %%" % (float(counter + 1.) / n_trials * 100.))
         stdout.flush()
 
-    def merge_test_result_pickles(self, data_path='test_stat_results/test/test',
-                                  output_path="test_stat_results/test",
+    def merge_test_result_pickles(self, data_root='test_stat_results/test/test',
+                                  output_root="test_stat_results/test",
                                   config_name="Fast_with_fit"):
-        """Searches for all pickle files matching the data_path path.
+        """Searches for all pickle files matching the data_path results_path.
         Merges these into a single pickle file, and saves it to OutPutPath.
         Prints the combined results.
 
@@ -387,36 +426,41 @@ class GenerationControl(object, ):
         :param config_name: Name of configuration (used for naming pickle file)
         """
 
-        data_path += "_" + config_name
-        output_path += "_" + config_name + ".pkl"
+        for result in ["TS",  "convergence", "params",]:
 
-        # Checks if results directory exists
-        output_dir = os.path.dirname(output_path)
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
+            data_path = data_root + "_" + config_name + "_" + result
+            output_path = output_root + "_" + config_name + "_" + result + \
+                          ".pkl"
 
-        # Creates an empty Pickle Path for results
-        if os.path.isfile(output_path):
-            os.remove(output_path)
+            # Checks if results directory exists
+            output_dir = os.path.dirname(output_path)
+            if not os.path.isdir(output_dir):
+                os.makedirs(output_dir)
 
-        # Returns a list of all files matching the path given
-        file_list = glob.glob(data_path + '__*.pkl')
+            # Creates an empty Pickle Path for results
+            if os.path.isfile(output_path):
+                os.remove(output_path)
 
-        test_stat_results = {}
+            # Returns a list of all files matching the results_path given
+            file_list = glob.glob(data_path + '__*.pkl')
 
-        # Loops over each file and adds it to the combined File
-        for singlefile in file_list:
-            pkl_file = open(singlefile, 'rb')
-            single_result = pickle.load(pkl_file)
-            pkl_file.close()
-            for k in single_result.keys():
-                if k in test_stat_results.keys():
-                    test_stat_results[k] = np.append(test_stat_results[k],
-                                                     single_result[k])
-                else:
-                    test_stat_results[k] = single_result[k]
+            test_stat_results = {}
 
-        # Saves merged file and prints results
-        with open(output_path, 'wb') as pkl_file:
-            pickle.dump(test_stat_results, pkl_file)
-        self.print_generation_overview(output_path)
+            # Loops over each file and adds it to the combined File
+            for singlefile in file_list:
+                pkl_file = open(singlefile, 'rb')
+                single_result = pickle.load(pkl_file)
+                pkl_file.close()
+                for k in single_result.keys():
+                    if k in test_stat_results.keys():
+                        test_stat_results[k] = np.append(
+                            test_stat_results[k], single_result[k], axis=0)
+                    else:
+                        test_stat_results[k] = single_result[k]
+
+            # Saves merged file and prints results
+            with open(output_path, 'wb') as pkl_file:
+                pickle.dump(test_stat_results, pkl_file)
+            self.print_generation_overview(output_path)
+
+            print result

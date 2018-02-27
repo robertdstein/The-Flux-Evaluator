@@ -372,8 +372,8 @@ class PDF():
 # ==============================================================================
 
     def space_pdf_signal(self, source, data, ):
-        """Calculates the angular distance between the source and the data.
-        Uses a Gaussian PDF function, centered on the source.
+        """Calculates the angular distance between the source_path and the data.
+        Uses a Gaussian PDF function, centered on the source_path.
         Returns the value of the Gaussian at the given distances.
 
         :param source: Single Source
@@ -387,7 +387,7 @@ class PDF():
         return space_term
 
     def time_pdf_signal(self, source, data, ):
-        """Converts data times to be in units of days since source discovery
+        """Converts data times to be in units of days since source_path discovery
 
         :param source: Reference Source
         :param data: Data
@@ -435,7 +435,7 @@ class PDF():
     def compute_source_weights_time(self, ):
         """Loops over sources. For any of the given Time Models, calculates
         the overlap between the associated time PDF and the data-taking
-        period. Assigns time weights for the source, as well as Time
+        period. Assigns time weights for the source_path, as well as Time
         Normalisation.
         """
         for source in self.sources:
@@ -449,45 +449,45 @@ class PDF():
             source['weight_time'] = max(season_norm / self.SeasonTimeSpan, 0.)
             source['TimeNorm'] = max(season_norm / total_norm, 0.)
 
-            print source['weight_time'], source['TimeNorm'], season_norm
+            # print source_path['weight_time'], source_path['TimeNorm'], season_norm
 
             # # Calculates for a box beginning TimeBoxLength before discovery
             # # and continuing until discovery.
             # if self.ReconTimeModel == 'BoxPre':
             #     t_start = min(
             #         max(self.DataStart,
-            #             source['discoverydate_mjd'] - self.ReconTimeLength),
+            #             source_path['discoverydate_mjd'] - self.ReconTimeLength),
             #         self.DataEnd)
             #
-            #     t_end = min(max(self.DataStart, source['discoverydate_mjd']),
+            #     t_end = min(max(self.DataStart, source_path['discoverydate_mjd']),
             #         self.DataEnd)
             #
             #     time_length_in_seasons = t_end - t_start
             #     tot_norm = self.ReconTimeLength
-            #     source['weight_time'] = max(
+            #     source_path['weight_time'] = max(
             #         time_length_in_seasons / self.SeasonTimeSpan, 0.)
-            #     source['TimeNorm'] = max(time_length_in_seasons / tot_norm, 0.)
+            #     source_path['TimeNorm'] = max(time_length_in_seasons / tot_norm, 0.)
 
             # Calculates for for an arbitrary exponential decay model
             # if self.ReconTimeModel == 'Decay':
             #     t_pp = self.ReconModelParameters["t_pp"]
             #     t_start = max(
-            #         0., self.DataStart - (source['discoverydate_mjd']))
+            #         0., self.DataStart - (source_path['discoverydate_mjd']))
             #     t_end = min(self.ReconTimeLength,
-            #         max((self.DataEnd - source['discoverydate_mjd']), 0.))
+            #         max((self.DataEnd - source_path['discoverydate_mjd']), 0.))
             #     tot_norm = t_pp * (
             #         np.log(self.ReconTimeLength + t_pp) - np.log(0. + t_pp))
             #     SeasonNorm = t_pp * (
             #         np.log(t_end + t_pp) - np.log(t_start + t_pp))
-            #     source['TimeNorm'] = SeasonNorm / tot_norm
-            #     source['weight_time'] = (
-            #         (source['TimeNorm'] * tot_norm) / self.SeasonTimeSpan)
+            #     source_path['TimeNorm'] = SeasonNorm / tot_norm
+            #     source_path['weight_time'] = (
+            #         (source_path['TimeNorm'] * tot_norm) / self.SeasonTimeSpan)
 
     def single_time_pdf(self, t, source):
         """Processes the array of event times (in mjd). Checks if there is
         Time Normalisation, or sets it to 1. Checks if each event occurred in
         the given season. If a time passes, rescales the time (in mjd) to a
-        time since source discovery.
+        time since source_path discovery.
 
         For these times, creates an array of zeroes and fills the
         corresponding entries with the normalised neutrino light curve values

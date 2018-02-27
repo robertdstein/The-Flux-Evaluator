@@ -37,11 +37,21 @@ class Sensitivity():
     def __init__(self, path='test_stat_results/test_setup',
                  plot_path='plots/LikelihoodLandscape/test_setup',
                  plotting=False, upper_limit=False, config="Fast_with_fit"):
+        """Initialises default values for all attributes
 
-        path += "_" + config + ".pkl"
+        :param path: Root results_path for reading pickle files
+        :param plot_path: Root results_path for saving plots
+        :param plotting: Boolean for whether to produce plots
+        :param upper_limit:
+        :param config:
+        """
+
+        path += "_" + config + "_"
         plot_path += config + "_"
 
-        self.path = path
+        self.path = path + "TS.pkl"
+        self.fit_params_path = path + "params.pkl"
+        self.fit_status_path = path + "convergence.pkl"
         self.plot_path = plot_path
         self.plotting = plotting
         self.UpperLimit = upper_limit
@@ -72,13 +82,21 @@ class Sensitivity():
         """Initialises default dictionary values for attributes. Loops over
         test stat results, and fills dictionaries with entries.
         """
+        # Initialise empty dictionaries
+
         self.all_data['test_stat_all_unsorted'] = dict()
         self.all_data['test_stat_sorted'] = dict()
         self.all_data['test_stat_sorted_all'] = dict()
         self.all_data['cumu_dist_normed'] = dict()
         self.all_data['weights'] = dict()
         self.all_data['NTrials'] = dict()
+
+        # Loop over flux values
+
         for k in self.test_stat_results.keys():
+
+            #Save both sorted and unsorted TS
+
             self.all_data['test_stat_all_unsorted'][k] = self.test_stat_results[k]
             all_test_stat_sorted = np.sort(self.test_stat_results[k])
             self.all_data['test_stat_sorted_all'][k] = all_test_stat_sorted
@@ -103,7 +121,8 @@ class Sensitivity():
             data = self.all_data['test_stat_all_unsorted'][0]
             mask = data > 0.
             fraction = np.sum(mask) / float(len(mask))
-            print('Fraction of underfluctuations is ', 1. - fraction)
+            print'Fraction of underfluctuations is ',
+            print '{0:.2f}'.format(1. - fraction)
             fit_res = scp.stats.chi2.fit(data[mask], df=2., floc=0., fscale=1.)
 
             # if False:
@@ -166,15 +185,13 @@ class Sensitivity():
         else:
             return False
 
-    def FindDetectionChance(self, ):
-        self.all_data['DetChanceFunc'] = {}
-        self.all_data['DetChance'] = {}
-        for k in sorted(self.all_data['test_stat_sorted'].keys()):
+
+    def plot_TS_distribution(self):
+
+        for k in sorted(self.all_data['test_stat_all_unsorted'].keys()):
+            data = self.all_data['test_stat_all_unsorted'][k]
 
             path = self.plot_path + "ts_" + str(k) + ".pdf"
-
-            data = self.all_data['test_stat_sorted'][k]
-
             plt.figure()
             plt.hist(data, bins=20, lw=2, histtype='step',color='black', label='Test Stat')
             plt.yscale("log")
@@ -182,6 +199,14 @@ class Sensitivity():
             plt.xlabel(r"$\lambda$")
             plt.savefig(path)
             plt.close()
+
+
+
+    def FindDetectionChance(self, ):
+        self.all_data['DetChanceFunc'] = {}
+        self.all_data['DetChance'] = {}
+        for k in sorted(self.all_data['test_stat_sorted'].keys()):
+            data = self.all_data['test_stat_sorted'][k]
 
             if k == 0:
                 self.all_data['DetChance'][k] = self.alpha
@@ -225,10 +250,10 @@ class Sensitivity():
 
         self.DetChanceInterpolation = interp1d(raw_x, raw_y, kind='linear')
 
-        PolyParams = np.polyfit(x[1:], y[1:], 3, w=weights[1:])
+        PolyParams = np.polyfit(x, y, 3, w=weights)
         self.DetChancePolyFit = lambda z: np.polyval(PolyParams, z)
         self.DetChanceMyFit = scp.optimize.curve_fit(
-            self.sens_interpolation_function, x[1:], y[1:], sigma=1. / weights[1:]
+            self.sens_interpolation_function, x, y, sigma=1. / weights
         )[0]
 
     def find_sensitivity(self, ):
@@ -244,7 +269,7 @@ class Sensitivity():
 
 
         if self.plotting:
-            print(self.path)
+            # print(self.results_path)
 
             plt.figure()
 
@@ -298,23 +323,23 @@ class Sensitivity():
                 np.sign(f(x))) != 0).reshape(-1)[0]
             fits["polynom"] = x[index]
 
-            print('Polynom: ', fits["polynom"])
+            print 'Polynom: ', '{0:.2f}'.format(fits["polynom"])
         except:
-            print ('Polynom: Failed')
+            print 'Polynom: Failed'
             fits["polynom"] = np.nan
         try:
             index = np.argwhere(np.diff(
                 np.sign(f2(x))) != 0).reshape(-1)[0]
             fits["interpolation"] = x[index]
-            print('Interpolation: ', fits["interpolation"])
+            print 'Interpolation: ', '{0:.2f}'.format(fits["interpolation"])
         except:
-            print ('Interpolation: Failed')
+            print 'Interpolation: Failed'
             fits["interpolation"] = np.nan
         try:
             fits["mine"] = brentq(f3, flux_scale_min, flux_scale_max)
-            print('My Interpolation: ', fits["mine"])
+            print'My Interpolation: ', '{0:.2f}'.format(fits["mine"])
         except:
-            print ('My Interpolation: Failed')
+            print 'My Interpolation: Failed'
             fits["mine"] = np.nan
         print ''
         return fits
@@ -333,6 +358,10 @@ class Sensitivity():
         self.FindDetectionChance()
         self.InterpolateDetectionChance()
         fits = self.find_sensitivity()
+        if self.plotting:
+            self.plot_TS_distribution()
+            self.plot_fit_results()
+        self.check_fit_status()
         return fits
 
     def pValueFunction(self, MeasuredLambda):
@@ -351,3 +380,34 @@ class Sensitivity():
             #FitPValue = scp.stats.chi2.pdf(MeasuredLambda, fit_res[0]) * \
                 #fraction * 100.
         return correct_p_value
+
+    def plot_fit_results(self):
+        with open(self.fit_params_path, 'rb') as pkl_file:
+            fit_params = pickle.load(pkl_file)
+            for x, data in fit_params.iteritems():
+                n_params = data.shape[1]
+                plt.figure()
+
+                for i, row in enumerate(data.T):
+                    vals = list(row[0])
+                    median = np.median(vals)
+
+                    ax = plt.subplot(n_params, 1, i+1)
+                    plt.hist(vals, bins=20)
+                    ax.axvline(median, linestyle="--", color="k")
+
+                save_path = self.plot_path + "params_" + str(x) + ".pdf"
+
+                plt.savefig(save_path)
+                plt.close()
+
+    def check_fit_status(self):
+        with open(self.fit_status_path, 'rb') as pkl_file:
+            fit_status = pickle.load(pkl_file)
+            for x, data in sorted(fit_status.iteritems()):
+                print "For", x, "we have",
+                n_fail = float(len(data[data > 0.]))
+                n = float(len(data))
+                frac = n_fail/n
+                print frac, "failue in fit convergence."
+

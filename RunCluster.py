@@ -21,9 +21,11 @@ MergeFiles.run() for the given configuration, combining results.
 """
 import subprocess
 import time
+import os
 import os.path
 import argparse
 import MergeFiles as Mf
+from common import log_path
 
 cmd = 'qstat -u steinrob'
 
@@ -73,6 +75,9 @@ def wait_for_cluster():
 def submit_to_cluster(
         tasks, config, conf_file="analysis_config/config.ini", ntrials=50,
         steps=15, sh_file="SubmitOne.sh"):
+
+    os.system("rm " + log_path + "*")
+
     # Submits job to the cluster, with a command in the form of:
     # qsub -t 1-50:1 SubmitOne.sh Full_with_DaiFang_TDE
     submit_cmd = "qsub -t 1-" + str(tasks) + ":1 " + sh_file + " " + config \

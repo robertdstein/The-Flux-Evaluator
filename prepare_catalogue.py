@@ -7,6 +7,9 @@ arbitrary number of sources.
 """
 
 import numpy as np
+import time
+from sys import stdout
+from common import cat_path
 
 def read_in_catalogue():
     """Produces a catalogue with a single source_path.
@@ -38,6 +41,58 @@ def read_in_catalogue():
 
     return sources
 
+
+def single_source(sindec):
+    """Produces a catalogue with a single source_path.
+
+    :param sindec: Sin(Declination) of Source
+    :return: Source Array
+    """
+    sources = np.empty(
+        1, dtype=[("ra", np.float), ("dec", np.float),
+                  ("flux", np.float), ("n_exp", np.float),
+                  ("weight", np.float), ("weight_acceptance", np.float),
+                  ("weight_time", np.float),
+                  ("weight_distance", np.float),
+                  ("discoverydate_mjd", np.float),
+                  ("distance", np.float), ('name', 'a30'),
+                  ])
+
+    sources['ra'] = np.array([np.deg2rad(180.)])
+    sources['dec'] = np.arcsin(sindec)
+    sources['flux'] = np.array([1.e-9])
+    sources['weight'] = np.array([1.0])
+    sources['distance'] = np.array([1.0])
+    sources['discoverydate_mjd'] = (
+        np.array([55800.4164699]) )
+    sources['name'] = 'PS_dec=' + str(sindec)
+    sources["n_exp"] = 0.0
+    sources["weight_acceptance"] = 0.0
+    sources["weight_time"] = 0.0
+    sources["weight_distance"] = 0.0
+
+    return sources
+
+def make_single_sources():
+    """Makes single-source catalogues for a variety of sindec intervals."""
+    print "Making single-source catalogues for the following sin(declinations):"
+
+    sindecs = np.linspace(0.95, -0.95, 39)
+    print sindecs, "\n"
+    save_name = cat_path + "single_source_dec_"
+
+    for sindec in sindecs:
+        cat = single_source(sindec)
+        save_path = save_name + '{0:.2f}'.format(sindec) + \
+                    ".npy"
+        stdout.write("\rSaving to " + save_path)
+        stdout.flush()
+        np.save(save_path, cat)
+        time.sleep(0.1)
+
+    print "\n"
+    print "Single Source catalogues created!", "\n"
+
 def read_in_catalogue_stack(n_sources):
     """Produces a catalogue of n sources. Attributes are randomised within
     physical bounds.
@@ -47,7 +102,7 @@ def read_in_catalogue_stack(n_sources):
     """
 
     sources = np.empty(
-        n, dtype=[("ra", np.float), ("dec", np.float),
+        n_sources, dtype=[("ra", np.float), ("dec", np.float),
                   ("flux", np.float), ("n_exp", np.float),
                   ("weight", np.float), ("weight_acceptance", np.float),
                   ("weight_time", np.float),
@@ -75,11 +130,13 @@ def read_in_catalogue_stack(n_sources):
 
 if __name__ == '__main__':
     
-    # Saves a single-source_path catalogue
-    single_source_array = read_in_catalogue()
-    np.save(root + "catalogue00.npy", single_source_array)
+    # # Saves a single-source_path catalogue
+    # single_source_array = read_in_catalogue()
+    # np.save(cat_path + "catalogue00.npy", single_source_array)
+    #
+    # # Saves an n-source_path catalogue
+    # n = 10
+    # n_source_array = read_in_catalogue_stack(n)
+    # np.save(cat_path + "catalogue_stack" + str(n) + ".npy", n_source_array)
 
-    # Saves an n-source_path catalogue
-    n = 10
-    n_source_array = read_in_catalogue_stack(n)
-    np.save(root + "catalogue_stack" + str(n) + ".npy", n_source_array)
+    make_single_sources()
