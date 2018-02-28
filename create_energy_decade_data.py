@@ -3,10 +3,12 @@ import numpy as np
 import os
 from common import source_path, e_decades_dir
 
-data_path = source_path + "data_configs/fast.ini"
+data_path = source_path + "data_configs/IC86.ini"
 
 data_conf = ConfigParser.ConfigParser()
 data_conf.read(data_path)
+
+step = 0.25
 
 # Loops over each season, creating an LLh Object.
 # The data is randomised, and the LLh function is spline-fitted.
@@ -27,7 +29,7 @@ for season in data_conf.sections():
     min_logE = int(np.min(logE))
     max_logE = int(np.max(logE)) + 1
 
-    logE_bands = range(min_logE, max_logE)
+    logE_bands = np.arange(min_logE, max_logE, step=step)
 
     print len(logE), np.min(logE), np.max(logE)
     print logE_bands
@@ -37,7 +39,7 @@ for season in data_conf.sections():
     veto = []
 
     for lower_lim in logE_bands:
-        upper_lim = lower_lim + 1
+        upper_lim = lower_lim + step
 
         mask = (logE >= lower_lim) & (logE < upper_lim)
 
@@ -49,7 +51,7 @@ for season in data_conf.sections():
 
         total += n
 
-        if n < 10000:
+        if n < 1000:
             print "Removing band", lower_lim, "due to insufficient statistics."
             veto.append(lower_lim)
 
@@ -74,7 +76,7 @@ for season in data_conf.sections():
     print os.system(cmd)
 
     for lower_lim in logE_bands:
-        upper_lim = lower_lim + 1
+        upper_lim = lower_lim + step
 
         name = str(lower_lim) + "<logE<" + str(upper_lim)
 
@@ -99,8 +101,8 @@ for season in data_conf.sections():
 
         # aw = np.load()
 
-        new_config_path = source_path + "data_configs/SUBSAMPLE_IC86_1_" + \
-                          name + ".ini"
+        new_config_path = source_path + "data_configs/SUBSAMPLE_" + season + \
+                          "_" + name + ".ini"
 
         new = ConfigParser.ConfigParser()
 

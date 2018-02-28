@@ -7,15 +7,19 @@ import ConfigParser
 import argparse
 import MergeFiles as MF
 import RunCluster as RC
+from scripts import time_models as tm
 from matplotlib import pyplot as plt
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--submit", action="store_true")
 cfg = parser.parse_args()
 
+{"t0": 0, "length": 100, "t_pp": 1.0}
+
 user_dir = "/afs/ifh.de/user/s/steinrob/Desktop/python/The-Flux-Evaluator/"
-file_name = "analysis_config/test_misalignment.ini"
-pickle_names = "test_misalignment/offset_"
+save_dir = "/afs/ifh.de/user/s/steinrob/scratch/The-Flux-Evaluator__Output/"
+file_name = "analysis_config/test_misalignment_decay.ini"
+pickle_names = "test_misalignment_decay/offset_"
 
 test_configs_file = user_dir + file_name
 
@@ -27,12 +31,13 @@ with open(test_configs_file, "w") as f:
     for i in offsets:
         name = pickle_names + str(i)
         Config.add_section(name)
+        sim_params = {"t0": 0, "length": 100, "t_pp": 1.0}
         Config.set(name, "UseEnergy", False)
         Config.set(name, "FitGamma", True)
         Config.set(name, "FixedGamma", 2)
         Config.set(name, "UseTime", True)
-        Config.set(name, "SimTimeModel", "Box")
-        Config.set(name, "SimTimeParameters", {"t0": 0, "length": 100})
+        Config.set(name, "SimTimeModel", "Decay")
+        Config.set(name, "SimTimeParameters", sim_params)
         Config.set(name, "ReconTimeModel", "Box")
         Config.set(name, "ReconTimeParameters", {"t0": i, "length": 100})
         Config.set(name, "FitWeights", True)
@@ -41,7 +46,14 @@ with open(test_configs_file, "w") as f:
                    "/afs/ifh.de/user/s/steinrob/scratch/PS_Data/" +
                    "Catalogue/catalogue00.npy")
         Config.set(name, "DataConfig", "fast.ini")
-        Config.set(name, "MaxK", 30 * (100. / (100. - float(np.abs(i)))))
+
+        sim = tm.return_integrated_light_curve(i, "Decay", sim_params)
+
+        alt = tm.return_integrated_light_curve(
+            i + sim_params["length"], "Decay", sim_params)
+
+        maxk = 30 * (1. / ((1 - sim) * alt))
+        Config.set(name, "MaxK", maxk)
 
     Config.write(f)
 
@@ -49,12 +61,12 @@ os.system("rm " + user_dir + "logs/*")
 
 if cfg.submit:
     for section in Config.sections():
-        os.system(
-            "python " + user_dir + "RunLocal.py" +
-            " -c " + section + " -f " + file_name + " -n 100 -s 10")
+        # os.system(
+        #     "python " + source_path + "RunLocal.py" +
+        #     " -c " + section + " -f " + file_name + " -n 100 -s 10")
 
-    #     RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
-    # RC.wait_for_cluster()
+        RC.submit_to_cluster(10, section, file_name, ntrials=150, steps=20)
+    RC.wait_for_cluster()
 
 allfits = []
 
@@ -67,7 +79,7 @@ datapoints = {
 
 for i in offsets:
     name = pickle_names + str(i)
-    fits = MF.run(name, user_dir)
+    fits = MF.run(name)
     if fits is not None:
         datapoints["offset"].append(i)
         datapoints["interpolation"].append(fits["interpolation"])
@@ -114,7 +126,7 @@ plt.xlabel("Offset (Days)")
 plt.ylabel("Sensitivity (Arbitrary Units)")
 plt.legend()
 plt.tight_layout()
-plot_path = user_dir + "plots/combined_test_misalignment.pdf"
+plot_path = save_dir + "plots/combined_test_misalignment_decay.pdf"
 plt.savefig(plot_path)
 
 print "Saving to", plot_path
