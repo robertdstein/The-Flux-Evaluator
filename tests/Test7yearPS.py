@@ -95,6 +95,10 @@ ax1.scatter(
     datapoints["sindec"], datapoints["polynom_sens"], color='black',
     label='This code')
 
+ax1.plot(
+    datapoints["sindec"], datapoints["polynom_sens"], color='black',
+    linestyle="--")
+
 ax1.set_xlim(xmin=-1., xmax=1.)
 ax1.set_ylim(ymin=1.e-13, ymax=1.e-10)
 ax1.legend(loc='upper right', fancybox=True, framealpha=1.)
@@ -113,6 +117,7 @@ ratios = datapoints["polynom_sens"] /\
 print ratios
 
 ax2.scatter(datapoints["sindec"], ratios)
+ax2.plot(datapoints["sindec"], ratios, linestyle="--")
 ax2.set_ylabel(r"ratio", fontsize=12)
 ax2.set_xlabel(r"sin($\delta$)", fontsize=12)
 #

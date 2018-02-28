@@ -22,7 +22,9 @@ pickle_names = "test_energy/dec_"
 
 sindecs = [-0.45, 0.00, 0.45]
 
-logEs = [2, 3, 4, 5]
+logEs = [2.75, 3., 3.25, 3.5, 3.75, 4., 4.25, 4.5, 4.75, 5, 5.5]
+
+gap = logEs[1] - logEs[0]
 
 test_configs_file = source_path + file_name
 
@@ -32,11 +34,11 @@ with open(test_configs_file, "w") as f:
     for x in sindecs:
         for e in logEs:
 
-            eband = str(e) + "<logE<" + str(e+1)
+            eband = str(e) + "<logE<" + str(e + gap)
             ename = "logE=" + str(e)
             name = pickle_names + "{0:.2f}".format(x) + "_" + ename + "/"
 
-            data_config = "SUBSAMPLE_IC86_1_" + eband + ".ini"
+            data_config = "SUBSAMPLE_IC86_2_" + eband + ".ini"
 
             Config.add_section(name)
             Config.set(name, "UseEnergy", False)
@@ -56,7 +58,7 @@ with open(test_configs_file, "w") as f:
             coenders_k_sens = flux_to_k(coenders_sens)
             # print name, coenders_sens, coenders_k_sens, 2 * coenders_k_sens
 
-            Config.set(name, "MaxK", 100 * (10** (4 - e)*2) * coenders_k_sens)
+            Config.set(name, "MaxK", 100 * coenders_k_sens)
 
     Config.write(f)
 
@@ -64,7 +66,7 @@ if cfg.submit:
     for section in Config.sections():
 
         cmd = "python " + source_path + "RunLocal.py" + \
-            " -c " + section + " -f " + file_name + " -n 50 -s 100"
+            " -c " + section + " -f " + file_name + " -n 100 -s 5"
 
         print cmd
 
@@ -95,13 +97,15 @@ for i, x in enumerate(sindecs):
         ename = "logE=" + str(e)
         name = pickle_names + "{0:.2f}".format(x) + "_" + ename + "/"
 
-        print name
         try:
             fits = MF.run(name)
             if fits is not None:
                 datapoints["logE"].append(e)
                 datapoints["interpolation"].append(fits["interpolation"])
-                datapoints["polynom"].append(fits["polynom"])
+                datapoints["polynom"].append(fits["mine"])
+
+            else:
+                print fits
         except:
             pass
 
@@ -112,8 +116,8 @@ for i, x in enumerate(sindecs):
         np.array(datapoints["logE"]) + 0.5, datapoints["polynom_sens"],
         label=label, color=["r", "g", "b"][i])
 
-# ax1.set_xlim(xmin=-1., xmax=1.)
-ax1.set_ylim(ymin=1.e-12)
+# ax1.set_xlim(xmin=2., xmax=7.5)
+ax1.set_ylim(ymin=1.e-12, ymax = 1.e-9)
 ax1.legend(loc='upper right', fancybox=True, framealpha=1.)
 ax1.grid(True, which='both')
 ax1.semilogy(nonposy='clip')

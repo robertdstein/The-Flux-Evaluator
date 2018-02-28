@@ -237,16 +237,16 @@ class Sensitivity():
         raw_y = np.array([self.all_data['DetChance'][k] for k in raw_x])
         raw_weights = np.array([self.all_data['NTrials'][k] for k in raw_x])
 
-        mask = raw_y < 0.99
-        if (len(raw_y[mask]) > 4) and (max(raw_y[mask]) > 0.9):
-            x = raw_x[mask]
-            y = raw_y[mask]
-            weights = raw_weights[mask]
+        # mask = raw_y < 0.99
+        # if (len(raw_y[mask]) > 4) and (max(raw_y[mask]) > 0.9):
+        #     x = raw_x[mask]
+        #     y = raw_y[mask]
+        #     weights = raw_weights[mask]
 
-        else:
-            x = raw_x
-            y = raw_y
-            weights = raw_weights
+        # else:
+        x = raw_x
+        y = raw_y
+        weights = raw_weights
 
         self.DetChanceInterpolation = interp1d(raw_x, raw_y, kind='linear')
 
@@ -405,9 +405,11 @@ class Sensitivity():
         with open(self.fit_status_path, 'rb') as pkl_file:
             fit_status = pickle.load(pkl_file)
             for x, data in sorted(fit_status.iteritems()):
-                print "For", x, "we have",
+
                 n_fail = float(len(data[data > 0.]))
                 n = float(len(data))
                 frac = n_fail/n
-                print frac, "failue in fit convergence."
+                if frac > 0.5:
+                    print "For", x, "we have",
+                    print frac, "failue in fit convergence."
 

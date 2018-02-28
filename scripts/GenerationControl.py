@@ -461,6 +461,6 @@ class GenerationControl(object, ):
             # Saves merged file and prints results
             with open(output_path, 'wb') as pkl_file:
                 pickle.dump(test_stat_results, pkl_file)
-            self.print_generation_overview(output_path)
+            # self.print_generation_overview(output_path)
 
             print result

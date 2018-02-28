@@ -18,7 +18,7 @@ parser.add_argument("-s", "--submit", action="store_true")
 cfg = parser.parse_args()
 
 file_name = "analysis_config/test_misalignment_box.ini"
-pickle_names = "test_misalignment/dec_"
+pickle_names = "test_misalignment_box/dec_"
 
 test_configs_file = source_path + file_name
 
@@ -26,12 +26,12 @@ Config = ConfigParser.ConfigParser()
 
 sindecs = [-0.5, 0.00, 0.5]
 
-offsets = np.linspace(-90, 90, 39)
+offsets = np.linspace(-95, 95, 39)
 
 with open(test_configs_file, "w") as f:
     for x in sindecs:
         for i in offsets:
-            name = pickle_names + "{0:.2f}".format(x) + "_offset_" + str(i)
+            name = pickle_names + "{0:.2f}".format(x) + "/offset_" + str(i)
             Config.add_section(name)
             Config.set(name, "UseEnergy", False)
             Config.set(name, "FitGamma", True)
@@ -59,7 +59,7 @@ if cfg.submit:
     for section in Config.sections():
         os.system(
             "python " + source_path + "RunLocal.py" +
-            " -c " + section + " -f " + file_name + " -n 300 -s 5")
+            " -c " + section + " -f " + file_name + " -n 500 -s 5")
 
     #     RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
     # RC.wait_for_cluster()
@@ -82,7 +82,7 @@ for x in sindecs:
     }
 
     for i in offsets:
-        name = pickle_names + "{0:.2f}".format(x) + "_offset_" + str(i)
+        name = pickle_names + "{0:.2f}".format(x) + "/offset_" + str(i)
         fits = MF.run(name)
         if fits is not None:
             datapoints["offset"].append(i)
@@ -138,7 +138,7 @@ ax1.set_ylabel(r"$E^2 \mathrm{d}N /\mathrm{d}E$ [ TeV cm$^{-2}$ s$^{-1}$ ]",
 ax1.set_xlabel("Offset (Days)", fontsize=12)
 plt.legend()
 plt.tight_layout()
-save_path = plot_path + "combined_test_misalignment.pdf"
+save_path = plot_path + "combined_test_misalignment_box.pdf"
 plt.savefig(save_path)
 
 print "Saving to", save_path
