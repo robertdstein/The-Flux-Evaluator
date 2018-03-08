@@ -2,7 +2,7 @@ import os
 import sys
 
 from common import root_path, tfe_path, input_path, storage_path, \
-    output_path, log_path
+    output_path, log_path, pickle_results_dir
 import prepare_catalogue
 
 print "\n \n"
@@ -31,7 +31,8 @@ if x == "n":
     print "Please edit settings.py to include the correct directory!"
     sys.exit()
 
-for path in [tfe_path, input_path, storage_path, output_path, log_path]:
+for path in [tfe_path, input_path, storage_path, output_path, log_path,
+             pickle_results_dir]:
     if not os.path.isdir(path):
         print "Making results_path", path
         os.makedirs(path)
@@ -46,3 +47,5 @@ print "*                                                                      *"
 print "************************************************************************"
 print "\n"
 prepare_catalogue.make_single_sources()
+
+import create_energy_decade_data

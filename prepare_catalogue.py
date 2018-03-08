@@ -77,7 +77,7 @@ def make_single_sources():
     """Makes single-source catalogues for a variety of sindec intervals."""
     print "Making single-source catalogues for the following sin(declinations):"
 
-    sindecs = np.linspace(0.95, -0.95, 39)
+    sindecs = np.linspace(1.00, -1.00, 41)
     print sindecs, "\n"
     save_name = cat_path + "single_source_dec_"
 
