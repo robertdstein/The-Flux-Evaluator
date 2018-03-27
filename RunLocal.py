@@ -81,6 +81,14 @@ else:
                 'ConfigName': cfg.config
                 }
 
+    try:
+        settings["InjectionGamma"] = float(conf.get(cfg.config,
+                                                    "InjectionGamma"))
+
+    except ConfigParser.NoOptionError:
+        print "No specified Injection Gamma! Will give use of 2.0"
+        pass
+
     GenerationControlInstance = GenerationControl(settings)
 
     # Selects a range of flux scales, for later use in Sensitivity graphs
