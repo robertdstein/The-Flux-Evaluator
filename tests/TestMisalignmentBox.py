@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 import sys
 sys.path.append('..')
 from scripts.utils import coenders_7year_sensitivity, flux_to_k, k_to_flux
-from common import plot_path, source_path, cat_path, log_path
+from common import plot_path, source_path, cat_path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--submit", action="store_true")
@@ -90,10 +90,7 @@ for x in sindecs:
             datapoints["polynom"].append(fits["polynom"])
 
     datapoints["polynom_sens"] = k_to_flux(np.array(datapoints["polynom"]))
-    print datapoints["polynom_sens"]
 
-    # plt.plot(datapoints["offset"], datapoints["interpolation"],
-    #          label="Interpolation")
     ax1.plot(datapoints["offset"], datapoints["polynom_sens"],
              label=label)
 

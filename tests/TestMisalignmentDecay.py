@@ -74,8 +74,6 @@ if cfg.submit:
     #     RC.submit_to_cluster(10, section, file_name, ntrials=200, steps=20)
     # RC.wait_for_cluster()
 
-
-
 plt.figure()
 ax1 = plt.subplot(111)
 

@@ -21,9 +21,11 @@ file_name = "analysis_config/test_energy_decades.ini"
 pickle_names = "test_energy/dec_"
 
 sindecs = [-0.45, 0.00, 0.45]
+# sindecs = [0.45]
 
-logEs = [2.75, 3., 3.25, 3.5, 3.75, 4., 4.25, 4.5, 4.75, 5, 5.5]
-
+# logEs = [2.75, 3., 3.25, 3.5, 3.75, 4., 4.25, 4.5, 4.75, 5, 5.5]
+logEs = [2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6.]
+# logEs = [4.5, 5., 5.5]
 gap = logEs[1] - logEs[0]
 
 test_configs_file = source_path + file_name
@@ -38,7 +40,7 @@ with open(test_configs_file, "w") as f:
             ename = "logE=" + str(e)
             name = pickle_names + "{0:.2f}".format(x) + "_" + ename + "/"
 
-            data_config = "SUBSAMPLE_IC86_2_" + eband + ".ini"
+            data_config = "SUBSAMPLE_IC86_1_" + eband + ".ini"
 
             Config.add_section(name)
             Config.set(name, "UseEnergy", False)
@@ -55,10 +57,18 @@ with open(test_configs_file, "w") as f:
                        '{0:.2f}'.format(x) + ".npy")
             Config.set(name, "DataConfig", data_config)
             coenders_sens = coenders_7year_sensitivity(x)
-            coenders_k_sens = flux_to_k(coenders_sens)
+            if x < 0:
+                coenders_k_sens = flux_to_k(coenders_sens) * 10 **(np.abs(
+                    e - 5.0))
+            elif x > 0:
+                coenders_k_sens = flux_to_k(coenders_sens) * 10 ** (
+                    np.abs(e - 3.0)/1.5)
+            else:
+                coenders_k_sens = flux_to_k(coenders_sens) * 10 ** (
+                    np.abs(e - 3.5)/1.5)
             # print name, coenders_sens, coenders_k_sens, 2 * coenders_k_sens
 
-            Config.set(name, "MaxK", 100 * coenders_k_sens)
+            Config.set(name, "MaxK", 30 * coenders_k_sens)
 
     Config.write(f)
 
@@ -66,7 +76,7 @@ if cfg.submit:
     for section in Config.sections():
 
         cmd = "python " + source_path + "RunLocal.py" + \
-            " -c " + section + " -f " + file_name + " -n 100 -s 5"
+            " -c " + section + " -f " + file_name + " -n 100 -s 25"
 
         print cmd
 
@@ -111,19 +121,29 @@ for i, x in enumerate(sindecs):
 
     datapoints["polynom_sens"] = k_to_flux(np.array(datapoints["polynom"]))
     print datapoints["polynom_sens"]
+    x =[]
+    y = []
 
-    ax1.scatter(
-        np.array(datapoints["logE"]) + 0.5, datapoints["polynom_sens"],
-        label=label, color=["r", "g", "b"][i])
+    for j, sens in enumerate(datapoints["polynom_sens"]):
+
+        x.extend([datapoints["logE"][j], datapoints["logE"][j] + gap])
+        y.extend([sens, sens])
+
+    plt.plot(x, y, color=["r", "g", "b"][i], label=label, lw=2)
+
+    # ax1.scatter(
+    #     np.array(datapoints["logE"]) + (gap * 0.5), datapoints["polynom_sens"],
+    #     label=label, color=["r", "g", "b"][i], marker="_")
+
 
 # ax1.set_xlim(xmin=2., xmax=7.5)
 ax1.set_ylim(ymin=1.e-12, ymax = 1.e-9)
-ax1.legend(loc='upper right', fancybox=True, framealpha=1.)
+ax1.legend(loc='upper left', fancybox=True, framealpha=1.)
 ax1.grid(True, which='both')
 ax1.semilogy(nonposy='clip')
 ax1.set_ylabel(r"$E^2 \mathrm{d}N /\mathrm{d}E$ [ TeV cm$^{-2}$ s$^{-1}$ ]",
                fontsize=12)
-ax1.set_xlabel(r"$Log(Energy)")
+ax1.set_xlabel(r"Log(Reconstructed Energy)")
     #
     # plt.title('7 years PS Sample Sensitivity')
     #
