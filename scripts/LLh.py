@@ -89,8 +89,12 @@ class LLh(PDF, Injector, RandomTools):
         # Loads sources from the given source_path results_path
         # Adds field to numpy array
         self._sources2 = np.load(kwargs['SourcePath'])
+
+        new_fields = ['TimeNorm', "sim_TimeNorm"]
+
         self._sources = np.lib.recfunctions.append_fields(
-            self._sources2, 'TimeNorm', data=np.ones_like(self._sources2['ra']))
+            self._sources2, new_fields,
+            data=[np.ones_like(self._sources2['ra']) for x in new_fields])
         del self._sources2
 
         # Interpolates (in 2D) a function for the Gamma and declination
@@ -138,12 +142,6 @@ class LLh(PDF, Injector, RandomTools):
             self.ReconTimeLength = kwargs["ReconTimeParameters"]["length"]
             self.ReconTimeParameters = kwargs["ReconTimeParameters"]
 
-        # Sets smear Injection and MissTiming
-        # Inject with wrong weight
-        # MT Inject with scaled time window (longer/shorter)
-        # self.SmearInjection = 0.
-        # self.MissTiming = kwargs['MissTiming']
-
         # Creates empty dictionary, filled by Injector.find_and_apply_band_mask
         self.InjectionBandMask = dict()
 
@@ -153,7 +151,8 @@ class LLh(PDF, Injector, RandomTools):
             self.InjectionGamma = kwargs['InjectionGamma']
         else:
             self.InjectionGamma = 2.
-            self.WeightsInject = self.get_weights(self.mc, self.InjectionGamma)
+
+        self.WeightsInject = self.get_weights(self.mc, self.InjectionGamma)
         print 'Injection Spectrum', self.InjectionGamma
 
         # Creates a weight cache with default value nan
@@ -331,8 +330,6 @@ class LLh(PDF, Injector, RandomTools):
 
         llh_value = numexpr.evaluate('log1p(a / N_all)')
 
-        # print a, len(a)
-
         # Make sure to delete variables from memory
         del SoB
         del y
@@ -343,9 +340,6 @@ class LLh(PDF, Injector, RandomTools):
             llh_value = llh_value.sum() + (N_all - N) * np.log1p(-n / N_all)
         else:
             llh_value = llh_value.sum()
-
-        # print llh_value
-        # raw_input("prompt")
 
         # Definition of test statistic
         return 2. * llh_value

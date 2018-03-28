@@ -7,6 +7,7 @@ from scipy.stats import norm
 import healpy as hp
 import time_models as tm
 
+
 class Injector():
 
     def __init__(self, ):
@@ -102,6 +103,13 @@ class Injector():
             # Otherwise calculates Fluence as flux * livetime (i.e. constant)
             if self.UseTime is True:
                 fluence = source['flux'] * self.SimTimeLength * (60. * 60. * 24.)
+
+                # EfficencyFactor = livetime / (
+                # (self.DataEnd - self.DataStart) * 24. * 60. * 60.)
+                # TotalTime = self.SimTimeLength * (60. * 60. * 24.)
+                # fluence = EfficencyFactor * TotalTime * source['flux']
+                # print EfficencyFactor
+                # raw_input("prompt")
             else:
                 fluence = source['flux'] * livetime
 
@@ -118,12 +126,14 @@ class Injector():
             # If weighting for time, calculates weighted expectation value
             # for number of neutrinos, and adds it to total expectation value.
             if self.UseTime is True:
-                weightedMuN = MuN * source['weight_time']
+                weightedMuN = MuN * source['sim_TimeNorm']
                 TotMuN += weightedMuN
 
             # If not time weighting, simply adds expectation value to total.
             else:
                 TotMuN += MuN
+
+            # print weightedMuN, source["weight_time"]
 
             # Draws random number from expectation value of neutrinos
             n_signal = np.random.poisson(MuN)
@@ -157,8 +167,8 @@ class Injector():
 
             sig_events = np.concatenate((sig_events, sam_ev))
 
-        # print "Injecting", len(sig_events), sig_events
-        # raw_input("prompt")
+            # print len(sig_events), sig_events, self.DataStart
+            # raw_input("prompt")
 
         return sig_events
 

@@ -346,6 +346,23 @@ class PDF():
 
         bins = np.concatenate([bins[:1], bins, bins[-1:]])
         hist = np.concatenate([hist[:1], hist, hist[-1:]])
+
+        #In case of low statistics, fill zero-bins with minimum value!!!
+
+        histarr = np.array(hist)
+        mask = histarr > 0
+        # print histarr, np.log(histarr[mask]), np.sum(np.log(histarr[mask]))
+
+        minval = np.min(histarr[mask])
+        histarr[~mask] = minval
+
+        # print histarr, np.log(histarr), np.sum(np.log(histarr))
+        hist = list(histarr)
+        # print hist
+        #
+        # raw_input("prompt")
+
+
         bkg_spline = scipy.interpolate.InterpolatedUnivariateSpline(
                                 (bins[1:] + bins[:-1]) / 2.,
                                 np.log(hist), k=2)
@@ -448,6 +465,13 @@ class PDF():
 
             source['weight_time'] = max(season_norm / self.SeasonTimeSpan, 0.)
             source['TimeNorm'] = max(season_norm / total_norm, 0.)
+
+            sim_season_norm, sim_total_norm = tm.return_norms(
+                self.SimTimeModel, self.DataStart, self.DataEnd,
+                source["discoverydate_mjd"],
+                self.SimTimeParameters)
+
+            source['sim_TimeNorm'] = max(sim_season_norm / sim_total_norm, 0.)
 
             # print source_path['weight_time'], source_path['TimeNorm'], season_norm
 

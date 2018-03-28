@@ -90,8 +90,8 @@ class GenerationControl(object, ):
             self.seed = seed
         np.random.seed(self.seed)
 
-        # Sets the save results_path for the pickle file, Generates the trials for
-        # the given flux scale, and saves the pickle results file
+        # Sets the save results_path for the pickle file, Generates the trials
+        # for the given flux scale, and saves the pickle results file
         path += "_" + self.settings["ConfigName"]
         end_path = '__' + "{0:.2G}".format(k) + '_' + str(self.seed) + \
                    '.pkl'
@@ -147,6 +147,7 @@ class GenerationControl(object, ):
 
             # Loops over seasons to create each season's LLh function
             llh_funcs = []
+
             for season in self.seasons:
                 season.prepare_fake_data_set_and_evaluate_pdf(k, )
                 f = season.ProduceLLhFunction()
@@ -204,15 +205,7 @@ class GenerationControl(object, ):
                         season.sources['weight_time'] *
                         season.sources['weight_acceptance'])
 
-                    # for source_path in season.sources:
-                    #     for field in source_path.dtype.fields:
-                    #         print field, source_path[field], " ",
-                    #     print "\n"
-                    # raw_input("prompt")
-
                     NSignalTotal += np.sum(season.sources['weight'])
-
-                # print x
 
                 # Puts the weights into a matrix
                 WeightMatrix = np.zeros(
@@ -222,7 +215,7 @@ class GenerationControl(object, ):
                     WeightMatrix[i] = season.sources['weight']
 
                 # If the weights are not to be fitted, assign a weight of 1
-                # to events which lie outside the seasons, and renormalise
+                # to sources which lie outside the seasons, and renormalise
                 if self.settings['FitWeights'] is False:
                     norm = np.sum(WeightMatrix, axis=1)[:, None]
                     for i, n in enumerate(norm):
@@ -267,9 +260,6 @@ class GenerationControl(object, ):
             res = self.minimise_llh(f_final)
 
             flag = res[2]["warnflag"]
-            # if flag > 0:
-            #     print res[2]
-            #     raw_input("prompt")
 
             test_stat_res = -res[1]
             test_stats.append(test_stat_res)
@@ -311,8 +301,7 @@ class GenerationControl(object, ):
                     bounds = [(0., 1000.) for i in range(n_sources)] + \
                              [(1., 4.)]
                     res = scp.optimize.fmin_l_bfgs_b(
-                        f_final, seed, bounds=bounds, approx_grad=True,
-                        epsilon=0.01
+                        f_final, seed, bounds=bounds, approx_grad=True
                     )
 
                 if self.settings['FitGamma'] is False:
@@ -426,7 +415,7 @@ class GenerationControl(object, ):
         :param config_name: Name of configuration (used for naming pickle file)
         """
 
-        for result in ["TS",  "convergence", "params",]:
+        for result in ["TS",  "convergence", "params"]:
 
             data_path = data_root + "_" + config_name + "_" + result
             output_path = output_root + "_" + config_name + "_" + result + \
@@ -461,6 +450,6 @@ class GenerationControl(object, ):
             # Saves merged file and prints results
             with open(output_path, 'wb') as pkl_file:
                 pickle.dump(test_stat_results, pkl_file)
-            # self.print_generation_overview(output_path)
+            self.print_generation_overview(output_path)
 
             print result

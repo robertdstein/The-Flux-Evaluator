@@ -53,7 +53,7 @@ class RandomTools(object, ):
 
         t_max = self.SimTimeParameters["length"] + self.SimTimeParameters["t0"]
 
-        t = np.linspace(t_min, t_max, 1.e4)
+        t = np.linspace(t_min, t_max, 1.e5)
 
         self.InversInterpol = interp1d(
             self.IntegralNuLightCurveFunc(t), t, kind='linear')
@@ -85,7 +85,7 @@ class RandomTools(object, ):
         recon_t_max = self.ReconTimeParameters["length"] +\
                       self.ReconTimeParameters["t0"]
 
-        recon_t = np.linspace(recon_t_min, recon_t_max, 1.e4)
+        recon_t = np.linspace(recon_t_min, recon_t_max, 1.e5)
 
         self.ReconInversInterpol = interp1d(
             self.ReconIntegralNuLightCurveFunc(recon_t), recon_t, kind='linear')
