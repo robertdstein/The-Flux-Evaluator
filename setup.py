@@ -2,7 +2,7 @@ import os
 import sys
 
 from common import root_path, tfe_path, input_path, storage_path, \
-    output_path, log_path, pickle_results_dir
+    output_path, log_path, pickle_results_dir, cat_path
 import prepare_catalogue
 
 print "\n \n"
@@ -32,7 +32,7 @@ if x == "n":
     sys.exit()
 
 for path in [tfe_path, input_path, storage_path, output_path, log_path,
-             pickle_results_dir]:
+             cat_path, pickle_results_dir]:
     if not os.path.isdir(path):
         print "Making results_path", path
         os.makedirs(path)

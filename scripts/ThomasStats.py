@@ -17,6 +17,9 @@ class Chi2_LeftTruncated(object):
 
         data_left  = data[data <= cut]
         data_right = data[data > cut]
+        #
+        # print data_left, data_right
+
         N_all      = len(data)
         N_left     = len(data_left)
 
@@ -34,9 +37,7 @@ class Chi2_LeftTruncated(object):
         #           loglh += N_left*dist.logcdf(cut)
            return -loglh
 
-        res = scipy.optimize.minimize(func,x0=[2., 1., 1.])
-        #                                     x0=p_start,)
-        #                                     bounds=p_bounds)
+        res = scipy.optimize.minimize(func, x0=p_start, bounds=p_bounds)
 
         if not res.success:
            print 'Chi2 fit did not converge! Result is likely garbage.'

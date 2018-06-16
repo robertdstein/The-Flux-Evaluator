@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 import sys
 sys.path.append('..')
 from scripts.utils import coenders_7year_sensitivity, flux_to_k, k_to_flux
-from common import plot_path, source_path, cat_path, log_path
+from common import plot_path, source_path, cat_path, log_path, root_path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--submit", action="store_true")
@@ -91,6 +91,8 @@ plot_range = np.linspace(-0.99, 0.99, 1000)
 plt.figure()
 ax1 = plt.subplot(111)
 
+res = dict()
+
 for i, x in enumerate(sindecs):
 
     label = "SinDec = " + str(x)
@@ -119,6 +121,9 @@ for i, x in enumerate(sindecs):
         except:
             pass
 
+    res[label] = datapoints
+
+
     datapoints["polynom_sens"] = k_to_flux(np.array(datapoints["polynom"]))
     print datapoints["polynom_sens"]
     x =[]
@@ -135,6 +140,7 @@ for i, x in enumerate(sindecs):
     #     np.array(datapoints["logE"]) + (gap * 0.5), datapoints["polynom_sens"],
     #     label=label, color=["r", "g", "b"][i], marker="_")
 
+np.save(root_path + "log_e_data.npy", res)
 
 # ax1.set_xlim(xmin=2., xmax=7.5)
 ax1.set_ylim(ymin=1.e-12, ymax = 1.e-9)

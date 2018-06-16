@@ -404,7 +404,7 @@ class PDF():
         return space_term
 
     def time_pdf_signal(self, source, data, ):
-        """Converts data times to be in units of days since source_path discovery
+        """Converts data times to be in units of days since sourcediscovery
 
         :param source: Reference Source
         :param data: Data
